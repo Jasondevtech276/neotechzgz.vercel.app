@@ -9,8 +9,9 @@ export async function POST(request: Request) {
     const action = body.action === 'register' ? 'register' : 'login'
     if (!email || password.length < 6) return NextResponse.json({ error: 'Datos de acceso no válidos' }, { status: 400 })
     const supabase = await createClient()
+    const requestUrl = new URL(request.url)
     const result = action === 'register'
-      ? await supabase.auth.signUp({ email, password, options: { data: { display_name: email.split('@')[0] } } })
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${requestUrl.origin}/auth/callback`, data: { display_name: email.split('@')[0] } } })
       : await supabase.auth.signInWithPassword({ email, password })
     if (result.error) return NextResponse.json({ error: result.error.message }, { status: 400 })
     return NextResponse.json({ session: Boolean(result.data.session), needsConfirmation: action === 'register' && !result.data.session })
