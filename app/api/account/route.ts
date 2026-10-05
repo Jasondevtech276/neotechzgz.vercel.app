@@ -5,14 +5,15 @@ export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  const [{ data: profile, error: profileError }, { data: quotes, error: quotesError }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: quotes, error: quotesError }, { data: payments, error: paymentsError }] = await Promise.all([
     supabase.from('profiles').select('display_name,deleted_at').eq('id', user.id).maybeSingle(),
     supabase.from('quotes').select('id,client_code,service,status,budget_calculated,created_at,description').eq('user_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('payments').select('id,product_id,status,amount_cents,stripe_subscription_id,created_at').eq('user_id', user.id).order('created_at', { ascending: false }),
   ])
-  if (profileError || quotesError) return NextResponse.json({ error: 'No se pudo cargar el espacio de trabajo' }, { status: 500 })
+  if (profileError || quotesError || paymentsError) return NextResponse.json({ error: 'No se pudo cargar el espacio de trabajo' }, { status: 500 })
   if (profile?.deleted_at) return NextResponse.json({ error: 'Cuenta desactivada' }, { status: 403 })
   const notifications = (quotes ?? []).flatMap(quote => [{ id: `${quote.id}-created`, title: `Solicitud ${quote.client_code} recibida`, text: `${quote.service} está registrada en tu espacio.`, date: quote.created_at }])
-  return NextResponse.json({ email: user.email ?? '', name: profile?.display_name ?? '', quotes: quotes ?? [], notifications })
+  return NextResponse.json({ email: user.email ?? '', name: profile?.display_name ?? '', quotes: quotes ?? [], payments: payments ?? [], notifications })
 }
 
 export async function PATCH(request: Request) {
