@@ -1,14 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase public configuration is missing')
-}
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
-
 export type Quote = {
   name: string
   email: string
@@ -26,13 +15,21 @@ export async function saveQuote(quote: Quote) {
   if (!Number.isFinite(quote.budget) || quote.budget < 0) {
     return { error: new Error('Invalid budget') }
   }
-  return supabase.from('quotes').insert({
-    client_name: quote.name,
-    email: quote.email,
-    company: quote.company || null,
-    service: quote.service,
-    hours: quote.hours,
-    budget: quote.budget,
-    notes: quote.notes || null,
+
+  const response = await fetch('/api/quotes', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      name: quote.name,
+      email: quote.email,
+      company: quote.company || null,
+      service: quote.service,
+      hours: quote.hours,
+      description: quote.notes || null,
+      budget_calculated: quote.budget,
+    }),
   })
+
+  const data = await response.json().catch(() => ({}))
+  return { data, error: response.ok ? null : new Error(data.error || 'No se pudo guardar la solicitud') }
 }
