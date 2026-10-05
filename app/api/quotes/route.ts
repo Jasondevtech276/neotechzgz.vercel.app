@@ -5,6 +5,16 @@ import { sendEmail } from '@/lib/emailjs'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const serviceRates: Record<string, number> = {
+  'Soporte Remoto': 55,
+  'Soporte Presencial': 75,
+  'Desarrollo Web': 950,
+  'Consultoría IT': 85,
+  'Análisis de Sistemas': 75,
+  'Plan STARTER': 99,
+  'Plan PROFESSIONAL': 179,
+  'Plan ENTERPRISE': 399,
+}
 const allowedServices = new Set([
   'Soporte Remoto',
   'Soporte Presencial',
@@ -35,7 +45,7 @@ export async function POST(request: Request) {
     const service = typeof body.service === 'string' ? body.service : ''
     const description = typeof body.description === 'string' ? body.description.trim() : null
     const hours = Number(body.hours)
-    const budget = Number(body.budget_calculated)
+    const budget = serviceRates[service] * hours
 
     if (name.length < 2 || name.length > 120 || !emailPattern.test(email) || email.length > 254) {
       return NextResponse.json({ error: 'Datos de contacto no válidos' }, { status: 400 })

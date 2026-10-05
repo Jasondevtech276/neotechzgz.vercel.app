@@ -20,7 +20,7 @@ export async function GET() {
   const { data, error } = await supabase.from('quotes').select('id,client_code,name,email,company,service,hours,description,budget_calculated,status,created_at').order('created_at', { ascending: false })
   if (error) {
     console.error('[v0] admin quotes query failed', error)
-    return NextResponse.json({ error: 'No se pudieron cargar las solicitudes', detail: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'No se pudieron cargar las solicitudes' }, { status: 500 })
   }
   return NextResponse.json({ quotes: data })
 }
@@ -28,7 +28,8 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const { supabase, isAdmin } = await getAdminClient()
   if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  const body = await request.json()
+  let body: Record<string, unknown>
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'JSON no válido' }, { status: 400 }) }
   const id = typeof body.id === 'string' ? body.id : ''
   const status = typeof body.status === 'string' ? body.status : ''
   const allowed = ['recibida','en revisión','presupuesto enviado','aceptada','en curso','completada','cancelada']

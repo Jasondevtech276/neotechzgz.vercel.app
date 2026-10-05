@@ -10,6 +10,13 @@ const limiter = redis
   : null
 
 export async function checkRateLimit(key: string) {
-  if (!limiter) return { success: true, remaining: 10, reset: 0 }
-  return limiter.limit(key)
+  if (!limiter) {
+    if (process.env.NODE_ENV === 'production') return { success: false, remaining: 0, reset: Date.now() + 60_000 }
+    return { success: true, remaining: 10, reset: 0 }
+  }
+  try { return await limiter.limit(key) } catch (error) {
+    console.error('[v0] rate limit unavailable', error)
+    if (process.env.NODE_ENV === 'production') return { success: false, remaining: 0, reset: Date.now() + 60_000 }
+    return { success: true, remaining: 10, reset: 0 }
+  }
 }
