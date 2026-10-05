@@ -18,7 +18,8 @@ export async function updateSession(request: NextRequest) {
   })
   const { data: { user } } = await supabase.auth.getUser()
   if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') {
-    if (!user || user.email?.toLowerCase() !== 'larbimhed260796@gmail.com') {
+    const { data: profile } = user ? await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle() : { data: null }
+    if (!user || !profile?.is_admin) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
