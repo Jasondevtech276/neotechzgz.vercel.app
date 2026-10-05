@@ -5,16 +5,23 @@ import { sendEmail } from '@/lib/emailjs'
 async function getAdminClient() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { supabase, user: null, isAdmin: false }
-  const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
-  return { supabase, user, isAdmin: profile?.is_admin === true }
+  if (!user) return { supabase, user: null, isAdmin: false, profileError: null }
+  const { data: profile, error: profileError } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
+  return { supabase, user, isAdmin: profile?.is_admin === true, profileError }
 }
 
 export async function GET() {
-  const { supabase, isAdmin } = await getAdminClient()
+  const { supabase, isAdmin, profileError } = await getAdminClient()
+  if (profileError) {
+    console.error('[v0] admin profile lookup failed', profileError)
+    return NextResponse.json({ error: 'No se pudo validar el rol administrativo' }, { status: 500 })
+  }
   if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { data, error } = await supabase.from('quotes').select('id,client_code,name,email,company,service,hours,description,budget_calculated,status,created_at').order('created_at', { ascending: false })
-  if (error) return NextResponse.json({ error: 'No se pudieron cargar las solicitudes' }, { status: 500 })
+  if (error) {
+    console.error('[v0] admin quotes query failed', error)
+    return NextResponse.json({ error: 'No se pudieron cargar las solicitudes', detail: error.message }, { status: 500 })
+  }
   return NextResponse.json({ quotes: data })
 }
 
