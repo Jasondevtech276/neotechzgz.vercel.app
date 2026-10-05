@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const origin = request.headers.get('origin') ?? 'https://neotechzgz.vercel.app'
   const session = await getStripe().checkout.sessions.create({
     mode: product.mode,
-    line_items: [{ price_data: { currency: 'eur', product_data: { name: product.name, description: product.description }, unit_amount: product.priceInCents, ...(product.mode === 'subscription' ? { recurring: { interval: 'month' as const } } : {}) }, quantity: 1 }],
+    line_items: [{ price: product.stripePriceId, quantity: 1 }],
     customer_email: user.email,
     client_reference_id: user.id,
     metadata: { user_id: user.id, product_id: product.id },
