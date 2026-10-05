@@ -1,5 +1,7 @@
 type EmailParams = Record<string, string | number | undefined>
 
+// EmailJS template variables: to_email, to_name, client_code, status, service, message, tracking_url.
+
 const endpoint = 'https://api.emailjs.com/api/v1.0/email/send'
 
 export async function sendEmail(templateParams: EmailParams) {

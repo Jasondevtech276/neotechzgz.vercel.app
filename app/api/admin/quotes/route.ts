@@ -41,7 +41,7 @@ export async function PATCH(request: Request) {
   const { error: historyError } = await supabase.from('quote_status_history').insert({ quote_id: id, status, changed_by: user?.id ?? null })
   if (historyError) return NextResponse.json({ error: 'Estado actualizado, pero no se pudo registrar el historial' }, { status: 500 })
   try {
-    await sendEmail({ to_email: quote.email, to_name: quote.name, client_code: quote.client_code, status, service: quote.service, message: `Tu solicitud ${quote.client_code} ha cambiado a: ${status}.` })
+    await sendEmail({ to_email: quote.email, to_name: quote.name, client_code: quote.client_code, status, service: quote.service, message: `Tu solicitud ${quote.client_code} ha cambiado a: ${status}.`, tracking_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://neotechzgz-larbimhed260796-5453s-projects.vercel.app'}/#seguimiento` })
   } catch (emailError) {
     console.error('[v0] status notification email failed', emailError)
   }

@@ -61,8 +61,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se pudo guardar la solicitud' }, { status: 500 })
     }
 
+    const requestUrl = new URL(request.url)
     try {
-      await sendEmail({ to_email: email, to_name: name, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.` })
+      await sendEmail({ to_email: email, to_name: name, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.`, tracking_url: `${requestUrl.origin}/#seguimiento` })
     } catch (emailError) {
       console.error('[v0] quote confirmation email failed', emailError)
     }
