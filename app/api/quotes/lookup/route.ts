@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function GET(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const rate = await checkRateLimit(`quotes:lookup:${forwarded}`)
+  if (!rate.success) return NextResponse.json({ error: 'Demasiadas consultas. Inténtalo de nuevo más tarde.' }, { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } })
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')?.trim().toUpperCase()
   const email = searchParams.get('email')?.trim().toLowerCase()

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/emailjs'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const allowedServices = new Set([
@@ -23,6 +24,9 @@ function getServerClient() {
 }
 
 export async function POST(request: Request) {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const rate = await checkRateLimit(`quotes:create:${forwarded}`)
+  if (!rate.success) return NextResponse.json({ error: 'Demasiadas solicitudes. Inténtalo de nuevo más tarde.' }, { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } })
   try {
     const body = await request.json()
     const name = typeof body.name === 'string' ? body.name.trim() : ''
