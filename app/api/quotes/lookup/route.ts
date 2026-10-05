@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const { data: { user } } = await createServerClient().then(client => client.auth.getUser())
   if (!user) return NextResponse.json({ error: 'Inicia sesión para consultar tus solicitudes' }, { status: 401 })
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE
   if (!url || !key) return NextResponse.json({ error: 'Servicio no configurado' }, { status: 500 })
   const serviceClient = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data, error } = await serviceClient.from('quotes').select('id,client_code,status,service,created_at').eq('client_code', code).eq('email', email).eq('user_id', user.id).maybeSingle()
