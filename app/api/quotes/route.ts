@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { sendEmail } from '@/lib/emailjs'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const allowedServices = new Set([
@@ -56,7 +57,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No se pudo guardar la solicitud' }, { status: 500 })
     }
 
-    return NextResponse.json({ clientCode: data.client_code, status: data.status }, { status: 201 })
+    try {
+      await sendEmail({ to_email: email, to_name: name, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.` })
+    } catch (emailError) {
+      console.error('[v0] quote confirmation email failed', emailError)
+    }
+
+    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification: 'queued' }, { status: 201 })
   } catch (error) {
     console.error('[v0] quote route failed', error)
     return NextResponse.json({ error: 'Solicitud no válida' }, { status: 400 })
