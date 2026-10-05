@@ -14,9 +14,10 @@ export async function GET(request: Request) {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) return NextResponse.json({ error: 'Servicio no configurado' }, { status: 500 })
-  const { data, error } = await createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
-    .from('quotes').select('client_code,status,service,created_at').eq('client_code', code).eq('email', email).eq('user_id', user.id).maybeSingle()
+  const serviceClient = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } })
+  const { data, error } = await serviceClient.from('quotes').select('id,client_code,status,service,created_at').eq('client_code', code).eq('email', email).eq('user_id', user.id).maybeSingle()
   if (error) return NextResponse.json({ error: 'No se pudo consultar la solicitud' }, { status: 500 })
   if (!data) return NextResponse.json({ error: 'No encontramos una solicitud con esos datos' }, { status: 404 })
-  return NextResponse.json(data)
+  const { data: history } = await serviceClient.from('quote_status_history').select('status,note,created_at').eq('quote_id', data.id).order('created_at', { ascending: true })
+  return NextResponse.json({ ...data, history: history || [] })
 }
