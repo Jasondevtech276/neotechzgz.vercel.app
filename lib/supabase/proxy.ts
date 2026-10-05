@@ -16,6 +16,11 @@ export async function updateSession(request: NextRequest) {
       },
     },
   })
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') {
+    if (!user || user.email?.toLowerCase() !== 'larbimhed260796@gmail.com') {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
   return response
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const allowedServices = new Set([
@@ -41,9 +42,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'La solicitud supera el tamaño permitido' }, { status: 400 })
     }
 
+    const { data: { user } } = await createServerClient().then(client => client.auth.getUser())
+    if (!user) return NextResponse.json({ error: 'Inicia sesión para solicitar un presupuesto' }, { status: 401 })
+    if (user.email?.toLowerCase() !== email) return NextResponse.json({ error: 'Usa el email de tu cuenta para crear la solicitud' }, { status: 403 })
     const { data, error } = await getServerClient()
       .from('quotes')
-      .insert({ name, email, company, service, hours, description, budget_calculated: budget })
+      .insert({ name, email, company, service, hours, description, budget_calculated: budget, user_id: user.id })
       .select('client_code,status')
       .single()
 
