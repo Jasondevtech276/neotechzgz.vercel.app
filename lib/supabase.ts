@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Supabase public configuration is missing')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -16,7 +20,12 @@ export type Quote = {
 }
 
 export async function saveQuote(quote: Quote) {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return { error: null }
+  if (!Number.isFinite(quote.hours) || quote.hours < 1 || quote.hours > 1000) {
+    return { error: new Error('Invalid hours') }
+  }
+  if (!Number.isFinite(quote.budget) || quote.budget < 0) {
+    return { error: new Error('Invalid budget') }
+  }
   return supabase.from('quotes').insert({
     client_name: quote.name,
     email: quote.email,
