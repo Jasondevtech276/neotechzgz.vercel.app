@@ -8,7 +8,7 @@ export async function GET() {
   const [{ data: profile, error: profileError }, { data: quotes, error: quotesError }, { data: payments, error: paymentsError }] = await Promise.all([
     supabase.from('profiles').select('display_name,deleted_at').eq('id', user.id).maybeSingle(),
     supabase.from('quotes').select('id,client_code,service,status,budget_calculated,created_at,description').eq('user_id', user.id).order('created_at', { ascending: false }),
-    supabase.from('payments').select('id,product_id,status,amount_cents,stripe_subscription_id,created_at').eq('user_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('payments').select('id,product_id,status,amount_cents,stripe_subscription_id,invoice_id,receipt_url,current_period_end,created_at').eq('user_id', user.id).order('created_at', { ascending: false }),
   ])
   if (profileError || quotesError || paymentsError) return NextResponse.json({ error: 'No se pudo cargar el espacio de trabajo' }, { status: 500 })
   if (profile?.deleted_at) return NextResponse.json({ error: 'Cuenta desactivada' }, { status: 403 })

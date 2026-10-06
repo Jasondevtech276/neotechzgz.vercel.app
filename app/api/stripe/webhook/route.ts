@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail } from '@/lib/emailjs'
 
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature')
