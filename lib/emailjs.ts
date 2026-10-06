@@ -8,6 +8,7 @@ export async function sendEmail(templateParams: EmailParams) {
   const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID
   const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID
   const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+  const privateKey = process.env.EMAILJS_PRIVATE_KEY
 
   if (!serviceId || !templateId || !publicKey) {
     throw new Error('EmailJS configuration is missing')
@@ -16,7 +17,7 @@ export async function sendEmail(templateParams: EmailParams) {
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ service_id: serviceId, template_id: templateId, user_id: publicKey, template_params: templateParams }),
+    body: JSON.stringify({ service_id: serviceId, template_id: templateId, user_id: publicKey, ...(privateKey ? { accessToken: privateKey } : {}), template_params: templateParams }),
     cache: 'no-store',
   })
 

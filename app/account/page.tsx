@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { CreditCard, FileText, Headphones, LayoutDashboard, LogOut, Package, ShieldCheck, Sparkles } from 'lucide-react'
 
 type Quote = { id: string; client_code: string; service: string; status: string; budget_calculated: number; created_at: string; description: string | null }
-type Payment = { id: string; product_id: string; status: string; amount_cents: number; stripe_subscription_id: string | null; created_at: string }
+type Payment = { id: string; product_id: string; status: string; amount_cents: number; stripe_subscription_id: string | null; invoice_id: string | null; receipt_url: string | null; current_period_end: string | null; created_at: string }
 type Ticket = { id: string; subject: string; message: string; status: string; created_at: string }
 type AccountData = { email: string; name: string; quotes: Quote[]; payments: Payment[]; notifications: { id: string; title: string; text: string; date: string }[] }
 const labels: Record<string, string> = { pending: 'Pendiente', in_progress: 'En curso', completed: 'Completada', cancelled: 'Cancelada', paid: 'Pagado', open: 'Abierto', in_progress_support: 'En curso', resolved: 'Resuelto' }
