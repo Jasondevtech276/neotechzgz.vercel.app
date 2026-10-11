@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/emailjs'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function GET() {
   const supabase = await createClient()
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Debes iniciar sesión' }, { status: 401 })
+  const rate = await checkRateLimit(`support:${user.id}`)
+  if (!rate.success) return NextResponse.json({ error: 'Has enviado demasiadas solicitudes. Inténtalo más tarde.' }, { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } })
   const body = await request.json().catch(() => ({}))
   const subject = typeof body.subject === 'string' ? body.subject.trim() : ''
   const message = typeof body.message === 'string' ? body.message.trim() : ''
@@ -27,4 +30,4 @@ export async function POST(request: Request) {
     console.error('[v0] support confirmation email failed', emailError)
   }
   return NextResponse.json({ ticket: data, notification: 'queued' }, { status: 201 })
-} 
+}
