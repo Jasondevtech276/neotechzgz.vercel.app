@@ -71,9 +71,9 @@ export async function POST(request: Request) {
   if (paymentsError) {
     subscriptionCancellationPending = true
   } else {
-    const subscriptionIds = [...new Set((payments ?? [])
+    const subscriptionIds = Array.from(new Set((payments ?? [])
       .map((payment) => payment.stripe_subscription_id as string | null)
-      .filter((id): id is string => Boolean(id)))]
+      .filter((id): id is string => Boolean(id))))
     if (subscriptionIds.length) {
       try {
         const stripe = getStripe()
