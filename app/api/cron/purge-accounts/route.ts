@@ -30,7 +30,7 @@ async function cancelOutstandingSubscriptions(
   // Discover subscriptions by customer as well: older/incomplete payment rows may
   // have a Stripe customer ID but no subscription ID. Fail closed if Stripe cannot
   // verify a customer; the account is deferred rather than erased unsafely.
-  for (const customerId of customers) {
+  for (const customerId of Array.from(customers)) {
     let startingAfter: string | undefined
     while (true) {
       const page = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) })
@@ -40,7 +40,7 @@ async function cancelOutstandingSubscriptions(
     }
   }
 
-  for (const subscriptionId of ids) {
+  for (const subscriptionId of Array.from(ids)) {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     if (subscription.status !== 'canceled' && subscription.status !== 'incomplete_expired') {
       await stripe.subscriptions.cancel(subscriptionId)
@@ -194,6 +194,6 @@ export async function GET(request: Request) {
     deleted,
     pending,
     skipped,
-    ...(warnings.size ? { warnings: [...warnings] } : {}),
+    ...(warnings.size ? { warnings: Array.from(warnings) } : {}),
   }, { headers: { 'Cache-Control': 'no-store' } })
 }
