@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const approvedEmail = 'larbimhed260796@gmail.com'
-
 async function authorize() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { supabase, allowed: false }
   const { data: profile, error } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
-  return { supabase, allowed: !error && (profile?.is_admin === true || user.email?.toLowerCase() === approvedEmail) }
+  return { supabase, allowed: !error && profile?.is_admin === true }
 }
 
 export async function GET() {

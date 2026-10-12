@@ -7,8 +7,7 @@ async function getAdminClient() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { supabase, user: null, isAdmin: false, profileError: null }
   const { data: profile, error: profileError } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
-  const approvedEmail = 'larbimhed260796@gmail.com'
-  return { supabase, user, isAdmin: profile?.is_admin === true || user.email?.toLowerCase() === approvedEmail, profileError }
+  return { supabase, user, isAdmin: !profileError && profile?.is_admin === true, profileError }
 }
 
 export async function GET() {
