@@ -26,12 +26,13 @@ This roadmap is not a claim of complete security. No web application can be cert
 - Confirmed `main` and the latest production deployment still point to `532706f28264b4ebe55b99d5e8ba243016e70a9a`. The GitHub build workflow passed for that commit; the combined GitHub status also reports a failed Vercel check.
 - Found that the existing `profiles_update_own` row policy did not prevent users from changing privileged columns such as `is_admin`. A follow-up migration limits authenticated column updates to `display_name`; it has not been applied.
 - Found that Stripe webhook database writes did not check Supabase errors or whether subscription/invoice updates matched a payment row. The follow-up code now returns a retryable 500 when persistence fails. Existing Stripe endpoints and secrets were not changed.
+- The current webhook also records a deleted Stripe subscription as `refunded`, although cancellation does not establish that a payment was refunded. Keep this separate from the retry fix until the payment-status schema and account UI can be migrated together.
 - Public checks observed HTTP 200 for the production homepage and health endpoint, HTTP 401 for unauthenticated admin overview, and the configured security response headers on the homepage. The webhook was not POST-tested because the available Vercel fetch operation did not provide a reliable POST response.
 - Vercel's environment metadata reports several sensitive variables with a `readable-secret` security issue. Review and rotate those values in Vercel without sharing them in chat. The returned metadata was not used to change environment variables.
 
 ## Next phases
 1. Apply the profile-column migration to staging and verify that an authenticated user can update `display_name` but cannot update `is_admin` or `deleted_at`; verify service-role account deletion still works.
-2. Test Stripe webhook signature rejection, duplicate delivery, Supabase write failures and event ordering in Stripe test mode; verify Stripe retries after persistence failures.
+2. Test Stripe webhook signature rejection, duplicate delivery, Supabase write failures and event ordering in Stripe test mode; verify Stripe retries after persistence failures. Migrate subscription cancellation status separately from refunds, including schema and account UI.
 3. Review and rotate the Vercel variables flagged as readable secrets; confirm production and preview Supabase configuration is consistent without exposing values.
 4. Add repository branch protection and required CI checks, then add dependency/security scanning and regression coverage for authorization and webhook retries.
 5. Review storage policies, administrator MFA, audit logging, backups/recovery, and a CSP compatible with the site's actual third-party integrations.
