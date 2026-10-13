@@ -1,1 +1,13 @@
-{"framework":"nextjs","buildCommand":"npm run build","installCommand":"npm install","cleanUrls":true,"trailingSlash":false,"crons":[{"path":"/api/cron/purge-accounts","schedule":"0 3 * * *"}]}
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/cron/purge-accounts",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

@@ -23,6 +23,8 @@ export async function PATCH(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const rate = await checkRateLimit(`account-profile:${user.id}`)
+  if (!rate.success) return NextResponse.json({ error: 'Demasiadas actualizaciones. Inténtalo más tarde.' }, { status: 429, headers: { 'Retry-After': String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))), 'Cache-Control': 'no-store' } })
   const { data: profile, error: profileError } = await supabase.from('profiles').select('deleted_at').eq('id', user.id).maybeSingle()
   if (profileError) return NextResponse.json({ error: 'No se pudo comprobar el estado de la cuenta' }, { status: 500 })
   if (profile?.deleted_at) return NextResponse.json({ error: 'La cuenta está pendiente de eliminación' }, { status: 403 })
