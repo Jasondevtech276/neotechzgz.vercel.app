@@ -7,17 +7,17 @@
 ## Resumen ejecutivo
 
 - La aplicación ya tiene controles de seguridad en el código, migraciones de base de datos y un workflow de build/auditoría.
-- La publicación de los cambios de seguridad más recientes en el dominio de producción sigue siendo una puerta pendiente: el último despliegue de producción confirmado en la auditoría previa usa el commit `532706f28264b4ebe55b99d5e8ba243016e70a9a`. La promoción de un despliegue más reciente devolvió HTTP 403 por permisos del equipo Vercel.
+- La publicación ya está completada en `neotechzgz.vercel.app`: deployment `dpl_5yjsked6GRLqs9KfgCEo2TznKvqa`, commit `55d417c347c47a0a550320e3ebbf6c70bf25ec1a`, estado `READY`. Se verificaron en producción la portada, cinco páginas nuevas, sitemap y `/api/health` con HTTP 200 y cabeceras de seguridad. El alias `www.neotechzgz.eu.org` está asignado en Vercel, pero la configuración DNS externa aparece como `misconfigured` y no se ha validado su resolución.
 - El asesor de Supabase sigue avisando de que la protección contra contraseñas filtradas está desactivada.
 - Vercel marca 12 variables como `readable-secret`; además, hay variables de entorno con prefijo `NEXT_PUBLIC_` cuyos nombres sugieren credenciales de servidor. No se ha confirmado que se hayan expuesto al navegador, pero deben revisarse y sanearse.
 - Stripe tiene varios destinos de webhook activos. No se debe borrar ni cambiar ningún destino hasta verificar el historial de entregas y qué sistema procesa cada evento.
-- PR #27 incorpora páginas dedicadas de Servicios, Planes, Proyectos, Contacto y Sobre NeoTech, navegación, metadatos SEO y un registro de incidencias; sigue sujeta a CI y publicación.
+- PR #27 y PR #29 están fusionadas y desplegadas en producción. La build de producción y el workflow de seguridad han terminado con éxito; los flujos autenticados de pago, presupuesto y correo siguen sujetos a pruebas controladas.
 
 ## Registro de incidencias
 
 | ID | Prioridad | Incidencia | Estado verificado | Acción requerida |
 |---|---|---|---|---|
-| DEP-01 | Crítica | El dominio de producción no está confirmado en el último commit de seguridad | Pendiente | Conceder al operador la función necesaria en el equipo Vercel o promover manualmente el despliegue validado; comprobar commit activo, homepage y health endpoint. |
+| DEP-01 | Crítica | El dominio de producción no está confirmado en el último commit de seguridad | Corregido para neotechzgz.vercel.app; DNS de www.eu.org pendiente en NT-16 | Deployment dpl_5yjsked6GRLqs9KfgCEo2TznKvqa READY en commit 55d417c; confirmar el alias y monitorizar health. |
 | ENV-01 | Crítica | Vercel señala 12 variables con `readable-secret`: `CRON_SECRET`, `EMAILJS_PRIVATE_KEY`, `STRIPE_MCP_KEY`, `STRIPE_SECRET_KEY`, `VERCEL_AI_GATEWAY_KEY`, `REDIS_URL`, `KV_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, `SUPABASE_SECRET_KEY_2`, `SUPABASE_SECRET_KEY` y `SERVICE_ROLE` | Pendiente | Revisar accesos y clasificación en Vercel. Rotar claves de servidor expuestas o compartidas, una por una, tras confirmar consumidores y plan de reversión. No copiar valores a GitHub ni al chat. |
 | ENV-02 | Alta | Existen variables llamadas `NEXT_PUBLIC_POSTGRES_PASSWORD`, `NEXT_PUBLIC_POSTGRES_URL`, `NEXT_PUBLIC_POSTGRES_URL_NON_POOLING`, `NEXT_PUBLIC_POSTGRES_PRISMA_URL`, `NEXT_PUBLIC_POSTGRES_USER`, `NEXT_PUBLIC_POSTGRES_HOST`, `NEXT_PUBLIC_POSTGRES_DATABASE` y `NEXT_PUBLIC_SUPABASE_JWT_SECRET`, además de nombres duplicados `NEXT_PUBLIC_NEXT_PUBLIC_*` | Pendiente de saneamiento | El código consultado no referencia directamente esas variables de Postgres/JWT. Confirmar que son residuos de integración, eliminar o renombrar de forma controlada y rotar cualquier contraseña/secret real que haya podido ser expuesto. No eliminar variables usadas por la app sin probar antes. |
 | ENV-03 | Alta | Variables de Supabase duplicadas y con diferentes targets/nombres | Pendiente | Mantener una configuración única y consistente para Production, Preview y Development: URL del proyecto `qkzmpxyefuqdhyxwfjcw` y una publishable/anon key pública vigente. No usar service-role/JWT secret en variables públicas. |
@@ -31,8 +31,8 @@
 | OPS-02 | Alta | Falta verificar MFA de administradores, backups y recuperación | Pendiente | Exigir MFA para cuentas privilegiadas; documentar y probar restauración de base de datos y procedimientos de incidente. |
 | APP-01 | Alta | Flujos completos de checkout, portal, webhooks, cancelación y persistencia no están verificados end-to-end | Pendiente | Ejecutar pruebas en modo test con eventos válidos e inválidos y comprobar filas resultantes en Supabase antes de anunciar pagos listos. |
 | APP-02 | Media | CSP no está aplicada en modo enforcement | Pendiente de análisis | Definir una CSP compatible con Stripe, fuentes y analítica; probar primero en Report-Only y pasar a enforcement tras resolver violaciones. |
-| APP-03 | Media | Página 404 usaba una paleta distinta del sistema visual principal | En corrección en esta rama | Unificarla con el tema NeoTech ZGZ y comprobar móvil/teclado. |
-| WEB-01 | Media | Las páginas públicas nuevas y sus ajustes aún no están en producción | En revisión, PR #27 | Pasar CI, revisar preview y publicar solo cuando la compilación y el acceso a Vercel lo permitan. |
+| APP-03 | Media | Página 404 usaba una paleta distinta del sistema visual principal | Corregido y desplegado | Mantener revisión visual y de teclado en móvil/escritorio. |
+| WEB-01 | Media | Las páginas públicas nuevas y sus ajustes aún no están en producción | Corregido y desplegado; revisión visual manual pendiente | Las rutas /servicios, /planes, /proyectos, /contacto y /sobre-neotech, la portada, sitemap.xml y /api/health devuelven HTTP 200. |
 
 ## Correcciones verificadas previamente
 
@@ -42,11 +42,11 @@
 - Rutas administrativas con comprobación de perfil y rol `is_admin=true`.
 - Validación y limitación de solicitudes de soporte/contacto; respuestas de error de Stripe más seguras y persistencia fallida con respuesta reintentable.
 - Headers de seguridad presentes en `next.config.mjs`: HSTS, nosniff, frame denial, Referrer-Policy y Permissions-Policy.
-- CI con `npm ci`, `npm audit --audit-level=high` y `npm run build`. El paso `npm audit --audit-level=high` pasó en la ejecución 38634338750; no se han modificado las dependencias desde entonces. La vista previa Vercel del commit 3c0b71216ff33bb49ce514ff974d93bc072f8e00 alcanzó READY y las rutas públicas principales comprobadas devolvieron HTTP 200. La ejecución más reciente de GitHub Actions permanece `pending` sin jobs asociados, por lo que no se declara un CI verde sobre el último commit documental.
+- CI: el workflow de seguridad en main (run 38636495236) pasó `npm ci`, `npm audit --audit-level=high` y `npm run build`. El deployment de producción dpl_5yjsked6GRLqs9KfgCEo2TznKvqa está READY y se comprobaron las rutas públicas con HTTP 200.
 - Asesor de Supabase: sin avisos de seguridad adicionales al aviso de protección de contraseñas filtradas.
 - Health endpoint y homepage devolvieron HTTP 200 en comprobaciones previas; esto no sustituye pruebas autenticadas ni pruebas de pagos.
 
-## Cambios de producto propuestos en PR #27
+## Cambios de producto desplegados en PR #27 y PR #29
 
 - `/servicios`: catálogo de servicios con precios orientativos y CTA.
 - `/planes`: planes de soporte y notas de alcance.
@@ -56,7 +56,8 @@
 - Navegación compartida, página 404, sitemap y metadatos SEO actualizados.
 - Cálculo de presupuesto separado entre servicios por hora, precio inicial web y planes mensuales; requiere pruebas funcionales.
 
-PR: https://github.com/Jasondevtech276/neotechzgz.vercel.app/pull/27
+PR #27: https://github.com/Jasondevtech276/neotechzgz.vercel.app/pull/27
+PR #29: https://github.com/Jasondevtech276/neotechzgz.vercel.app/pull/29
 
 ## Acciones que requieren acceso/autorización del titular
 
