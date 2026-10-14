@@ -6,6 +6,7 @@ import { InnerPage } from '@/components/inner-page'
 export const metadata: Metadata = {
   title: 'Planes de soporte IT | NeoTech ZGZ',
   description: 'Planes de soporte IT para autónomos y empresas, con alcance y tiempos de respuesta definidos.',
+  alternates: { canonical: 'https://neotechzgz.vercel.app/planes' },
 }
 
 const plans = [
