@@ -1,0 +1,27 @@
+
+/* Additional route pages: same dark/lime NeoTech design language. */
+.inner-hero{min-height:700px;padding-top:150px}
+.inner-note h2{margin:0 0 16px;font-size:clamp(28px,3vw,40px);line-height:1.05}
+.inner-note .lede{font-size:15px}
+.inner-content{padding-top:0}
+.inner-disclaimer{margin:28px 0 0;padding:18px 20px;border-left:2px solid var(--accent);background:var(--surface-2);color:var(--muted);font-size:13px;line-height:1.65}
+.inner-contact-grid{padding-bottom:24px}
+.inner-page-nav{display:flex;align-items:center;gap:clamp(10px,1.6vw,22px);color:var(--muted);font-size:13px}
+.inner-page-nav a{white-space:nowrap}
+.inner-page-nav a:hover{color:var(--text)}
+.inner-page-nav a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.inner-contact-grid .form-card{align-self:start}
+.inner-contact-grid .form-card h2{margin:10px 0;font-size:clamp(26px,3vw,36px)}
+.inner-contact-grid .form-card p{color:var(--muted);font-size:14px;line-height:1.65}
+.inner-contact-grid .contact-list span{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+@media(max-width:900px){
+ .inner-hero{min-height:auto;padding-top:130px}
+ .site-header nav:has(.inner-page-nav){align-items:flex-start;gap:18px;padding-top:18px;padding-bottom:16px}
+ .inner-page-nav{max-width:64vw;overflow-x:auto;padding:8px 0;scrollbar-width:thin}
+ .inner-page-nav a{flex:none}
+}
+@media(max-width:600px){
+ .inner-hero{padding-top:120px;padding-bottom:56px}
+ .inner-page-nav{max-width:56vw;gap:14px;font-size:12px}
+ .inner-content{padding-top:0}
+}
