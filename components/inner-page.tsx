@@ -18,7 +18,7 @@ export function InnerPage({ eyebrow, title, description, children }: InnerPagePr
             <span className="brand-mark">N</span>
             <span>NeoTech <em>ZGZ</em></span>
           </Link>
-          <div className="desktop-nav">
+          <div className="inner-page-nav">
             <Link href="/servicios">Servicios</Link>
             <Link href="/planes">Planes</Link>
             <Link href="/proyectos">Proyectos</Link>
