@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 }
 
 const services = [
-  { number: '01', title: 'Soporte remoto', price: '55 € / hora', description: 'Diagnóstico guiado, resolución de incidencias de software y optimización de equipos a distancia.', Icon: Server },
-  { number: '02', title: 'Soporte presencial', price: '75 € / hora', description: 'Instalación, configuración y mantenimiento informático presencial en Zaragoza, sujeto a disponibilidad.', Icon: MapPin },
+  { number: '01', title: 'Soporte remoto', price: '55 € / hora', description: 'Diagnóstico guiado, resolución de incidencias de software y optimización de equipos a distancia.', Icon: Server, href: '/contacto' },
+  { number: '02', title: 'Soporte presencial', price: '75 € / hora', description: 'Instalación, configuración y mantenimiento informático presencial en Zaragoza, sujeto a disponibilidad.', Icon: MapPin, href: '/contacto' },
   { number: '03', title: 'Desarrollo web', price: 'Desde 950 €', description: 'Sitios web profesionales y experiencias digitales adaptadas al negocio, con foco en claridad, rendimiento y accesibilidad.', Icon: Code2, href: '/desarrollo-web' },
   { number: '04', title: 'Consultoría IT', price: '85 € / hora', description: 'Análisis técnico, planificación y recomendaciones para tomar decisiones tecnológicas con criterio.', Icon: ShieldCheck, href: '/contacto' },
   { number: '05', title: 'Ciberseguridad', price: 'A consultar', description: 'Revisión de accesos, configuración segura y medidas prácticas para reducir riesgos tecnológicos.', Icon: LockKeyhole, href: '/ciberseguridad' },
