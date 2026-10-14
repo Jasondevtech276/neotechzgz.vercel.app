@@ -83,13 +83,15 @@ export async function POST(request: Request) {
     }
 
     const requestUrl = new URL(request.url)
+    let notification: 'sent' | 'failed' = 'failed'
     try {
       await sendEmail({ to_email: email, to_name: name, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.`, tracking_url: `${requestUrl.origin}/#seguimiento` })
+      notification = 'sent'
     } catch (emailError) {
       console.error('[v0] quote confirmation email failed', emailError)
     }
 
-    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification: 'queued' }, { status: 201 })
+    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification }, { status: 201 })
   } catch (error) {
     console.error('[v0] quote route failed', error)
     return NextResponse.json({ error: 'Solicitud no válida' }, { status: 400 })
