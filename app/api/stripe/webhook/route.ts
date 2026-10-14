@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail } from '@/lib/emailjs'
 
 function requirePersistedRows(result: { error: { message: string } | null; data: Array<{ id: string }> | null }) {
   if (result.error || !result.data?.length) {
@@ -29,8 +28,14 @@ export async function POST(request: Request) {
       requirePersistedRows(result)
     } else if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription
+      // Subscription lifecycle and payment/refund state are separate dimensions.
+      // A cancellation must never rewrite a successful payment as a refund.
       const result = await admin.from('payments')
-        .update({ status: event.type.endsWith('deleted') ? 'refunded' : 'paid', current_period_end: subscription.items.data[0]?.current_period_end ? new Date(subscription.items.data[0].current_period_end * 1000).toISOString() : null, updated_at: new Date().toISOString() })
+        .update({
+          subscription_status: subscription.status,
+          current_period_end: subscription.items.data[0]?.current_period_end ? new Date(subscription.items.data[0].current_period_end * 1000).toISOString() : null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('stripe_subscription_id', subscription.id)
         .select('id')
       requirePersistedRows(result)
