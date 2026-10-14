@@ -42,7 +42,7 @@
 - Rutas administrativas con comprobación de perfil y rol `is_admin=true`.
 - Validación y limitación de solicitudes de soporte/contacto; respuestas de error de Stripe más seguras y persistencia fallida con respuesta reintentable.
 - Headers de seguridad presentes en `next.config.mjs`: HSTS, nosniff, frame denial, Referrer-Policy y Permissions-Policy.
-- CI con `npm ci`, `npm audit --audit-level=high` y `npm run build`. La ejecución de PR #27 ha completado la instalación y auditoría sin vulnerabilidades de severidad alta; la compilación seguía ejecutándose en la última comprobación.
+- CI con `npm ci`, `npm audit --audit-level=high` y `npm run build`. El paso `npm audit --audit-level=high` pasó en la ejecución 38634338750; no se han modificado las dependencias desde entonces. La vista previa Vercel del commit 3c0b71216ff33bb49ce514ff974d93bc072f8e00 alcanzó READY y las rutas públicas principales comprobadas devolvieron HTTP 200. La ejecución más reciente de GitHub Actions permanece `pending` sin jobs asociados, por lo que no se declara un CI verde sobre el último commit documental.
 - Asesor de Supabase: sin avisos de seguridad adicionales al aviso de protección de contraseñas filtradas.
 - Health endpoint y homepage devolvieron HTTP 200 en comprobaciones previas; esto no sustituye pruebas autenticadas ni pruebas de pagos.
 
