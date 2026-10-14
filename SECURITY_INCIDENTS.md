@@ -6,7 +6,7 @@
 
 | ID | Severidad | Incidencia / evidencia | Estado | Siguiente acción |
 |---|---|---|---|---|
-| NT-01 | Crítica operativa | La versión endurecida de `main` está compilada en Vercel, pero la última publicación comprobada no la tiene como destino de producción. La promoción anterior falló con HTTP 403 por permisos del equipo. | **Bloqueada por permisos** | Autorizar acceso al equipo/proyecto Vercel y promover el despliegue READY correcto; verificar commit activo y dominio público. |
+| NT-01 | Crítica operativa | El despliegue de producción dpl_5yjsked6GRLqs9KfgCEo2TznKvqa (commit 55d417c) está READY y el alias neotechzgz.vercel.app apunta a él. | **Corregido en el dominio principal** | Mantener comprobación de salud; el dominio personalizado www.neotechzgz.eu.org tiene un problema DNS separado (NT-16). |
 | NT-02 | Alta | Supabase Auth tiene desactivada la protección contra contraseñas filtradas, según la revisión previa del Security Advisor. | **Pendiente de configuración** | Activar la protección en Supabase Auth y volver a revisar el Security Advisor. |
 | NT-03 | Alta | Se detectaron 12 variables de Vercel marcadas como secretos legibles en metadatos. Sus valores no se expusieron ni se modificaron. | **Pendiente de revisión** | Revisar variable por variable en Vercel; convertir a sensible/write-only cuando proceda y rotar credenciales afectadas de forma coordinada. |
 | NT-04 | Alta | Hay tres destinos de webhook live habilitados: dos a la ruta de Vercel y uno a una función de Supabase. No se ha confirmado el destino autoritativo ni el historial de entregas. | **Pendiente de autorización y evidencia** | Revisar eventos/entregas en Stripe Dashboard y confirmar propiedad, firmas, reintentos y modo de pruebas. No borrar destinos todavía. |
@@ -17,10 +17,10 @@
 | NT-08 | Media | Falta una batería automatizada suficiente para autorización de perfiles, reintentos de webhook y flujos de pago. | **Pendiente** | Añadir pruebas de regresión y ejecutarlas en CI antes de cambiar los flujos de producción. |
 | NT-09 | Media | Faltan evidencias de revisión integral de RLS, políticas de Storage, funciones privilegiadas, MFA de administradores, auditoría y recuperación de copias. | **Pendiente de auditoría** | Revisar tablas/políticas/grants y probar restauración con procedimiento documentado. |
 | NT-10 | Media | La política CSP aún requiere inventario de integraciones reales; activarla sin pruebas podría romper Stripe, analítica o correo. | **Pendiente de validación** | Preparar CSP en modo de reporte, analizar violaciones y después valorar enforcement. |
-| NT-11 | Media | El flujo de presupuesto no mostraba el código de seguimiento y el texto de éxito no reflejaba el resultado real del envío de email. | **Corrección en esta rama; CI/funcional pendiente** | La API devuelve `sent`/`failed` sin exponer detalles; la interfaz muestra el código y el estado del email. Validar con EmailJS configurado y sin configurar antes de cerrar. |
-| NT-12 | Media | La interfaz de seguimiento hablaba de acceso con cuenta, pero el formulario consulta con código y email. | **Texto corregido en rama; prueba funcional pendiente** | Confirmar que solo revela solicitudes asociadas al código/email correctos. |
-| NT-13 | Baja | Faltaban páginas dedicadas de navegación manteniendo la estética actual. | **Implementadas en rama; CI/visual pendiente** | Revisar Servicios, Planes, Proyectos y Contacto en móvil/desktop; publicar solo tras validar. |
-| NT-14 | Media | El presupuesto multiplicaba por horas tarifas fijas o planes mensuales. | **Lógica corregida en rama; CI y prueba funcional pendientes** | El frontend y la API ahora distinguen servicios por hora de Desarrollo Web (precio inicial) y planes mensuales; las horas son nulas en los casos no horarios. Verificar los importes y la persistencia en preview antes de usar presupuestos reales. |
+| NT-11 | Media | El flujo de presupuesto no mostraba el código de seguimiento y el texto de éxito no reflejaba el resultado real del envío de email. | **Código corregido y desplegado; prueba funcional pendiente** | La API devuelve sent/failed sin exponer detalles; la interfaz muestra el código y el estado del email. Validar con EmailJS configurado y sin configurar antes de cerrar. |
+| NT-12 | Media | La interfaz de seguimiento hablaba de acceso con cuenta, pero el formulario consulta con código y email. | **Texto corregido y desplegado; prueba funcional pendiente** | Confirmar que solo revela solicitudes asociadas al código/email correctos. |
+| NT-13 | Baja | Faltaban páginas dedicadas de navegación manteniendo la estética actual. | **Implementadas y publicadas** | Las rutas Servicios, Planes, Proyectos, Contacto y Sobre NeoTech devuelven HTTP 200 en producción. Hacer revisión visual manual en móvil y escritorio. |
+| NT-14 | Media | El presupuesto multiplicaba por horas tarifas fijas o planes mensuales. | **Lógica corregida, desplegada y compilada; prueba funcional pendiente** | El frontend y la API distinguen servicios por hora de Desarrollo Web (precio inicial) y planes mensuales; las horas son nulas en los casos no horarios. Probar importes y persistencia con una cuenta de test. |
 
 ## Corregido y comprobado anteriormente
 
@@ -42,3 +42,5 @@
 ## Regla de cierre
 
 Cada incidencia se cierra solo con evidencia: cambio revisado, CI verde cuando aplique, verificación funcional y comprobación de producción si afecta al sitio público. Los secretos no deben copiarse a issues, commits ni conversaciones.
+
+| NT-16 | Media | Vercel detecta la configuración DNS de www.neotechzgz.eu.org como misconfigured; la consulta de la web no pudo confirmar que el host sirva el despliegue. | **Pendiente de DNS externo** | En el proveedor que gestiona el DNS de EU.org, comprobar el CNAME de www hacia 87e2547736c30796.vercel-dns-017.com (alternativa indicada por Vercel: cname.vercel-dns.com.) y confirmar propagación. No afecta al dominio neotechzgz.vercel.app. |
