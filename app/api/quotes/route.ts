@@ -25,6 +25,12 @@ const allowedServices = new Set([
   'Plan PROFESSIONAL',
   'Plan ENTERPRISE',
 ])
+const hourlyServices = new Set([
+  'Soporte Remoto',
+  'Soporte Presencial',
+  'Consultoría IT',
+  'Análisis de Sistemas',
+])
 
 function getServerClient() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -44,13 +50,18 @@ export async function POST(request: Request) {
     const company = typeof body.company === 'string' ? body.company.trim() : null
     const service = typeof body.service === 'string' ? body.service : ''
     const description = typeof body.description === 'string' ? body.description.trim() : null
-    const hours = Number(body.hours)
-    const budget = serviceRates[service] * hours
+    const isHourly = hourlyServices.has(service)
+    const hours = isHourly ? Number(body.hours) : null
+    const budget = isHourly ? serviceRates[service] * Number(hours) : serviceRates[service]
 
     if (name.length < 2 || name.length > 120 || !emailPattern.test(email) || email.length > 254) {
       return NextResponse.json({ error: 'Datos de contacto no válidos' }, { status: 400 })
     }
-    if (!allowedServices.has(service) || !Number.isInteger(hours) || hours < 1 || hours > 1000 || !Number.isFinite(budget) || budget < 0 || budget > 10000000) {
+    if (
+      !allowedServices.has(service) ||
+      (isHourly && (!Number.isInteger(hours) || Number(hours) < 1 || Number(hours) > 1000)) ||
+      !Number.isFinite(budget) || budget < 0 || budget > 10000000
+    ) {
       return NextResponse.json({ error: 'Datos de solicitud no válidos' }, { status: 400 })
     }
     if ((company && company.length > 160) || (description && description.length > 5000)) {
