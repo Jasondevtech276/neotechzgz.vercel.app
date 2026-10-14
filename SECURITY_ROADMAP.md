@@ -7,11 +7,11 @@
 ## Resumen ejecutivo
 
 - La aplicación ya tiene controles de seguridad en el código, migraciones de base de datos y un workflow de build/auditoría.
-- La publicación ya está completada en `neotechzgz.vercel.app`: deployment `dpl_5yjsked6GRLqs9KfgCEo2TznKvqa`, commit `55d417c347c47a0a550320e3ebbf6c70bf25ec1a`, estado `READY`. Se verificaron en producción la portada, cinco páginas nuevas, sitemap y `/api/health` con HTTP 200 y cabeceras de seguridad. El alias `www.neotechzgz.eu.org` está asignado en Vercel, pero la configuración DNS externa aparece como `misconfigured` y no se ha validado su resolución.
+- La publicación actual está completada en `neotechzgz.vercel.app`: deployment `dpl_4uUtoszXD29fpoY81dwPrVLtwVrB`, commit `515ff435a5108cb0088941ec81037a31b8ea4cce`, estado `READY`, target `production`. Se verificaron en producción la portada, las páginas de servicios, planes, proyectos, contacto, Sobre NeoTech, las tres páginas de detalle, sitemap, robots y `/api/health` con HTTP 200 y cabeceras de seguridad. El alias `www.neotechzgz.eu.org` sigue con DNS externo `misconfigured` y requiere reparación independiente.
 - El asesor de Supabase sigue avisando de que la protección contra contraseñas filtradas está desactivada.
 - Vercel marca 12 variables como `readable-secret`; además, hay variables de entorno con prefijo `NEXT_PUBLIC_` cuyos nombres sugieren credenciales de servidor. No se ha confirmado que se hayan expuesto al navegador, pero deben revisarse y sanearse.
 - Stripe tiene varios destinos de webhook activos. No se debe borrar ni cambiar ningún destino hasta verificar el historial de entregas y qué sistema procesa cada evento.
-- PR #27 y PR #29 están fusionadas y desplegadas en producción. La build de producción y el workflow de seguridad han terminado con éxito; los flujos autenticados de pago, presupuesto y correo siguen sujetos a pruebas controladas.
+- PR #27, PR #29 y PR #32 están fusionadas. La build de producción y el workflow de seguridad del commit publicado han terminado con éxito; los flujos autenticados de pago, presupuesto y correo siguen sujetos a pruebas controladas.
 
 ## Registro de incidencias
 
@@ -23,7 +23,7 @@
 | ENV-03 | Alta | Variables de Supabase duplicadas y con diferentes targets/nombres | Pendiente | Mantener una configuración única y consistente para Production, Preview y Development: URL del proyecto `qkzmpxyefuqdhyxwfjcw` y una publishable/anon key pública vigente. No usar service-role/JWT secret en variables públicas. |
 | AUTH-01 | Alta | Protección de contraseñas filtradas desactivada en Supabase Auth | Pendiente | Activar leaked-password protection en Auth settings y probar registro/cambio de contraseña. |
 | STRIPE-01 | Crítica | Tres webhooks live habilitados: dos destinos a la ruta de Vercel y uno a una Edge Function de Supabase | Pendiente de arquitectura | Revisar en Stripe Dashboard los eventos entregados, errores y reintentos; acordar un procesador autoritativo. No desactivar destinos ni regenerar firmas antes de verificar dependencias. |
-| STRIPE-02 | Alta | La ruta actual parece registrar una suscripción cancelada como `refunded`; cancelación y reembolso son estados distintos | Pendiente | Diseñar campo de estado de suscripción independiente de pagos/refunds; cubrir eventos duplicados, retrasados y fuera de orden en modo test antes de migrar producción. |
+| STRIPE-02 | Alta | El webhook marcaba una suscripción cancelada como `refunded`; cancelación y reembolso son estados distintos | Código corregido y desplegado; prueba end-to-end pendiente | `payments.subscription_status` separa el ciclo de vida de la suscripción del estado financiero. Validar eventos duplicados, retrasados y fuera de orden en modo test antes de cerrar. |
 | DB-01 | Baja / revisión periódica | Función public.handle_new_user usa SECURITY DEFINER; la inspección confirma SET search_path TO '' y referencia public.profiles de forma cualificada | Control seguro observado; privilegios/trigger pendientes de revisión completa | Mantener el search_path vacío y verificar que solo roles previstos pueden ejecutar la función y que el trigger está asociado a la tabla correcta. No cambiarlo a ciegas. |
 | DB-02 | Media | Tablas públicas principales tienen RLS activo; Storage también tiene RLS activo y no se observaron políticas de Storage | Revisado parcialmente | Confirmar si Storage se utiliza. Mantener denegación por defecto si no hay uso; si hay uso, definir políticas mínimas por bucket/propietario y probar acceso anónimo y entre usuarios. |
 | DB-03 | Media | El asesor de rendimiento señala 7 índices no utilizados | Informativo | No borrar automáticamente: varios pueden ser nuevos o proteger operaciones futuras. Revisar métricas de uso tras un periodo suficiente y conservar índices de seguridad/retención salvo evidencia. |
@@ -32,7 +32,7 @@
 | APP-01 | Alta | Flujos completos de checkout, portal, webhooks, cancelación y persistencia no están verificados end-to-end | Pendiente | Ejecutar pruebas en modo test con eventos válidos e inválidos y comprobar filas resultantes en Supabase antes de anunciar pagos listos. |
 | APP-02 | Media | CSP no está aplicada en modo enforcement | Pendiente de análisis | Definir una CSP compatible con Stripe, fuentes y analítica; probar primero en Report-Only y pasar a enforcement tras resolver violaciones. |
 | APP-03 | Media | Página 404 usaba una paleta distinta del sistema visual principal | Corregido y desplegado | Mantener revisión visual y de teclado en móvil/escritorio. |
-| WEB-01 | Media | Las páginas públicas nuevas y sus ajustes aún no están en producción | Corregido y desplegado; revisión visual manual pendiente | Las rutas /servicios, /planes, /proyectos, /contacto y /sobre-neotech, la portada, sitemap.xml y /api/health devuelven HTTP 200. |
+| WEB-01 | Media | Faltaban páginas de detalle para servicios clave y navegación transversal completa | Corregido y desplegado; revisión visual manual pendiente | Las rutas /servicios, /planes, /proyectos, /contacto, /sobre-neotech, /desarrollo-web, /ciberseguridad, /mantenimiento, portada, sitemap.xml, robots.txt y /api/health devuelven HTTP 200. |
 
 ## Correcciones verificadas previamente
 
@@ -42,17 +42,19 @@
 - Rutas administrativas con comprobación de perfil y rol `is_admin=true`.
 - Validación y limitación de solicitudes de soporte/contacto; respuestas de error de Stripe más seguras y persistencia fallida con respuesta reintentable.
 - Headers de seguridad presentes en `next.config.mjs`: HSTS, nosniff, frame denial, Referrer-Policy y Permissions-Policy.
-- CI: el workflow de seguridad en main (run 38636495236) pasó `npm ci`, `npm audit --audit-level=high` y `npm run build`. El deployment de producción dpl_5yjsked6GRLqs9KfgCEo2TznKvqa está READY y se comprobaron las rutas públicas con HTTP 200.
+- CI: el workflow de seguridad del commit publicado (run 38638486638) pasó `npm ci`, `npm audit --audit-level=high` y `npm run build`. El deployment de producción dpl_4uUtoszXD29fpoY81dwPrVLtwVrB está READY; se comprobaron las rutas públicas con HTTP 200 y las cabeceras de seguridad.
 - Asesor de Supabase: sin avisos de seguridad adicionales al aviso de protección de contraseñas filtradas.
 - Health endpoint y homepage devolvieron HTTP 200 en comprobaciones previas; esto no sustituye pruebas autenticadas ni pruebas de pagos.
 
-## Cambios de producto desplegados en PR #27 y PR #29
+## Cambios de producto desplegados en PR #27, PR #29 y PR #32
 
 - `/servicios`: catálogo de servicios con precios orientativos y CTA.
 - `/planes`: planes de soporte y notas de alcance.
 - `/proyectos`: portfolio con enlaces a los proyectos ya declarados en la página principal.
 - `/contacto`: canales de contacto y recordatorio de no enviar datos sensibles.
 - `/sobre-neotech`: enfoque, valores y alcance de servicio.
+- `/desarrollo-web`, `/ciberseguridad` y `/mantenimiento`: páginas de detalle con metadatos SEO, enlaces desde el catálogo y contenido alineado con la plantilla actual.
+- `payments.subscription_status` y el estado de pago están separados; la migración `20261014210501_fix_payment_retention_and_subscription_state` está aplicada y verificada en producción.
 - Navegación compartida, página 404, sitemap y metadatos SEO actualizados.
 - Cálculo de presupuesto separado entre servicios por hora, precio inicial web y planes mensuales; requiere pruebas funcionales.
 
