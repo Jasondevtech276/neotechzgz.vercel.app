@@ -21,7 +21,7 @@
 | NT-13 | Baja | Faltaban páginas dedicadas de navegación manteniendo la estética actual. | **Implementadas en main; revisión visual pendiente** | Revisar Servicios, Planes, Proyectos, Contacto y Sobre NeoTech en móvil/desktop; publicar solo tras validar. |
 | NT-14 | Media | El presupuesto multiplicaba por horas tarifas fijas o planes mensuales. | **Lógica corregida en main; prueba funcional pendiente** | Verificar importes, cálculo y persistencia en preview antes de usar presupuestos reales. |
 | NT-15 | Crítica operativa | Vercel no devuelve el valor de variables marcadas como sensitive por esta conexión; no se puede confirmar desde la API si las variables de Production están rellenadas correctamente. | **Requiere verificación manual** | En el Dashboard, comprobar que la URL y la publishable key corresponden al proyecto Supabase correcto y que STRIPE_WEBHOOK_SECRET coincide con el signing secret del endpoint autoritativo. Si falta o no coincide, establecerlo en el Dashboard y hacer redeploy. No copiar secretos al chat. |
-| NT-16 | Crítica | El cron de purga intenta poner `payments.user_id` y `payments.stripe_session_id` a `NULL` para anonimizar el libro de pagos, pero la migración de creación declara ambas columnas `NOT NULL`. Las cuentas con pagos pueden quedar bloqueadas en la purga. | **Corrección preparada en rama; migración pendiente** | Aplicar la migración nueva en Supabase; probar con cuentas sintéticas con y sin pagos, confirmando anonimización y eliminación Auth solo tras el periodo de 60 días. No ejecutar purga manual sobre usuarios reales. |
+| NT-16 | Media | Hay una discrepancia entre el esquema inicial del repositorio (ambas columnas `NOT NULL`) y la base Supabase de producción consultada (ambas aparecen nullable). No se ha demostrado un bloqueo actual de la purga en producción; falta una migración versionada para mantener esa compatibilidad y separar el estado de suscripción. | **Migración preparada en rama; no aplicada** | Aplicar la migración nueva tras autorización y validar esquema y flujo con datos sintéticos. No ejecutar purga manual sobre usuarios reales. |
 
 ## Corregido y comprobado anteriormente
 
@@ -36,7 +36,7 @@
 ## Correcciones nuevas preparadas en la rama `fix/stripe-subscription-state`
 
 - El webhook deja de convertir cancelaciones de suscripción en reembolsos. Ahora persiste `subscription_status` por separado del estado financiero `status`.
-- La migración nueva hace nullable `payments.user_id` y `payments.stripe_session_id`, necesario para anonimizar filas conservadas durante la purga.
+- La migración nueva garantiza que `payments.user_id` y `payments.stripe_session_id` sean nullable, alineándose con el esquema de producción observado y permitiendo anonimizar filas conservadas durante la purga. La base actual ya los expone como nullable; el problema detectado es de deriva entre migraciones versionadas y el esquema live, no un fallo de purga confirmado en producción.
 - La migración incorpora una columna restringida `subscription_status` y un índice parcial.
 - **Dependencia:** estos cambios no deben desplegarse a producción hasta aplicar la migración de Supabase y probar el flujo con datos sintéticos. El cambio de código no demuestra por sí solo que la migración se haya aplicado ni que los webhooks reales funcionen.
 
