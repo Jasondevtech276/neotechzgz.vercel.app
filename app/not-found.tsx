@@ -1,11 +1,23 @@
 export default function NotFound() {
   return (
-    <main className="grid min-h-screen place-items-center bg-[#080c14] px-6 text-center text-slate-200">
-      <div>
-        <p className="mono text-xs uppercase tracking-[.3em] text-cyan-300">404 / NOT FOUND</p>
-        <h1 className="mt-4 text-4xl font-bold text-white">Página no encontrada</h1>
-        <a href="/" className="mt-6 inline-block text-cyan-300 hover:underline">Volver al inicio</a>
-      </div>
+    <main className="site">
+      <section className="hero" aria-labelledby="not-found-title">
+        <div className="hero-copy">
+          <p className="eyebrow">404 / RUTA NO DISPONIBLE</p>
+          <h1 id="not-found-title">Esta página no está aquí.</h1>
+          <p className="lede">Puede que el enlace haya cambiado o que la dirección esté escrita de forma incorrecta.</p>
+          <div className="hero-actions">
+            <a className="button button-primary" href="/">Volver al inicio ↗</a>
+            <a className="button button-quiet" href="/#contacto">Contactar con NeoTech</a>
+          </div>
+        </div>
+        <aside className="hero-panel">
+          <p className="panel-label">¿Qué puedes hacer?</p>
+          <div className="process-row"><span>01</span><p>Volver a la página principal</p></div>
+          <div className="process-row"><span>02</span><p>Explorar servicios y proyectos</p></div>
+          <div className="process-row"><span>03</span><p>Contactar si el enlace debería funcionar</p></div>
+        </aside>
+      </section>
     </main>
   )
 }
