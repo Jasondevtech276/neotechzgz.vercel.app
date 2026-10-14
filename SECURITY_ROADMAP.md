@@ -11,7 +11,7 @@
 - El asesor de Supabase sigue avisando de que la protección contra contraseñas filtradas está desactivada.
 - Vercel marca 12 variables como `readable-secret`; además, hay variables de entorno con prefijo `NEXT_PUBLIC_` cuyos nombres sugieren credenciales de servidor. No se ha confirmado que se hayan expuesto al navegador, pero deben revisarse y sanearse.
 - Stripe tiene varios destinos de webhook activos. No se debe borrar ni cambiar ningún destino hasta verificar el historial de entregas y qué sistema procesa cada evento.
-- PR #27 propone tres nuevas páginas públicas y navegación/SEO; sigue sujeta a CI y publicación.
+- PR #27 incorpora páginas dedicadas de Servicios, Planes, Proyectos, Contacto y Sobre NeoTech, navegación, metadatos SEO y un registro de incidencias; sigue sujeta a CI y publicación.
 
 ## Registro de incidencias
 
@@ -32,7 +32,7 @@
 | APP-01 | Alta | Flujos completos de checkout, portal, webhooks, cancelación y persistencia no están verificados end-to-end | Pendiente | Ejecutar pruebas en modo test con eventos válidos e inválidos y comprobar filas resultantes en Supabase antes de anunciar pagos listos. |
 | APP-02 | Media | CSP no está aplicada en modo enforcement | Pendiente de análisis | Definir una CSP compatible con Stripe, fuentes y analítica; probar primero en Report-Only y pasar a enforcement tras resolver violaciones. |
 | APP-03 | Media | Página 404 usaba una paleta distinta del sistema visual principal | En corrección en esta rama | Unificarla con el tema NeoTech ZGZ y comprobar móvil/teclado. |
-| WEB-01 | Media | Las nuevas páginas públicas aún no están en producción | En revisión, PR #27 | Pasar CI, revisar preview y publicar solo cuando la compilación y el acceso a Vercel lo permitan. |
+| WEB-01 | Media | Las páginas públicas nuevas y sus ajustes aún no están en producción | En revisión, PR #27 | Pasar CI, revisar preview y publicar solo cuando la compilación y el acceso a Vercel lo permitan. |
 
 ## Correcciones verificadas previamente
 
@@ -49,9 +49,12 @@
 ## Cambios de producto propuestos en PR #27
 
 - `/servicios`: catálogo de servicios con precios orientativos y CTA.
+- `/planes`: planes de soporte y notas de alcance.
 - `/proyectos`: portfolio con enlaces a los proyectos ya declarados en la página principal.
+- `/contacto`: canales de contacto y recordatorio de no enviar datos sensibles.
 - `/sobre-neotech`: enfoque, valores y alcance de servicio.
-- Navegación de escritorio/móvil y footer actualizados; sitemap y metadatos SEO ampliados.
+- Navegación compartida, página 404, sitemap y metadatos SEO actualizados.
+- Cálculo de presupuesto separado entre servicios por hora, precio inicial web y planes mensuales; requiere pruebas funcionales.
 
 PR: https://github.com/Jasondevtech276/neotechzgz.vercel.app/pull/27
 
