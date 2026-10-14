@@ -22,6 +22,8 @@
 | NT-13 | Baja | Faltaban páginas dedicadas de navegación manteniendo la estética actual. | **Implementadas y publicadas** | Las rutas Servicios, Planes, Proyectos, Contacto y Sobre NeoTech devuelven HTTP 200 en producción. Hacer revisión visual manual en móvil y escritorio. |
 | NT-14 | Media | El presupuesto multiplicaba por horas tarifas fijas o planes mensuales. | **Lógica corregida, desplegada y compilada; prueba funcional pendiente** | El frontend y la API distinguen servicios por hora de Desarrollo Web (precio inicial) y planes mensuales; las horas son nulas en los casos no horarios. Probar importes y persistencia con una cuenta de test. |
 
+| NT-17 | Media | El esquema inicial del repositorio declaraba `payments.user_id` y `payments.stripe_session_id` como `NOT NULL`, mientras que producción ya los expone como nullable. Faltaba una migración versionada que garantizara esa compatibilidad y añadiera el estado de suscripción. | **Migración aplicada y verificada en Supabase; archivo versionado preparado en rama** | Mantener el archivo con la versión `20261014210501`, validar CI y desplegar el webhook compatible. No ejecutar purga manual sobre usuarios reales. |
+
 ## Corregido y comprobado anteriormente
 
 - Las actualizaciones de perfil están limitadas a `display_name` en API y privilegios de base de datos.
