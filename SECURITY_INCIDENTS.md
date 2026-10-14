@@ -19,7 +19,7 @@
 | NT-11 | Media | La página principal comunicaba que se enviaba un presupuesto por correo, pero el flujo guarda la solicitud y descarga un PDF. | **Texto corregido en rama; CI/UX pendientes** | Confirmar en CI y en preview que el mensaje informa correctamente y no promete email automático. |
 | NT-12 | Media | La interfaz de seguimiento hablaba de acceso con cuenta, pero el formulario consulta con código y email. | **Texto corregido en rama; prueba funcional pendiente** | Confirmar que solo revela solicitudes asociadas al código/email correctos. |
 | NT-13 | Baja | Faltaban páginas dedicadas de navegación manteniendo la estética actual. | **Implementadas en rama; CI/visual pendiente** | Revisar Servicios, Planes, Proyectos y Contacto en móvil/desktop; publicar solo tras validar. |
-| NT-14 | Media | El presupuesto multiplicaba por horas tarifas fijas o planes mensuales y el selector no incluía planes. | **Lógica corregida en rama; CI y prueba funcional pendientes** | Verificar importes en preview para soporte por horas, Desarrollo Web y los tres planes antes de usar presupuestos reales. |
+| NT-14 | Media | El presupuesto multiplicaba por horas tarifas fijas o planes mensuales. | **Lógica corregida en rama; CI y prueba funcional pendientes** | El frontend y la API ahora distinguen servicios por hora de Desarrollo Web (precio inicial) y planes mensuales; las horas son nulas en los casos no horarios. Verificar los importes y la persistencia en preview antes de usar presupuestos reales. |
 
 ## Corregido y comprobado anteriormente
 
