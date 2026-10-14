@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Code2, ShieldCheck, Wrench } from 'lucide-react'
+import { InnerPage } from '@/components/inner-page'
 
 export const metadata: Metadata = {
   title: 'Sobre NeoTech ZGZ | Tecnología clara',
@@ -8,11 +10,23 @@ export const metadata: Metadata = {
 }
 
 export default function AboutPage() {
-  return <main className="site">
-    <header className="site-header"><nav><a href="/" className="brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a><div className="desktop-nav"><a href="/servicios">Servicios</a><a href="/proyectos">Proyectos</a><a href="/legal">Información legal</a></div><a href="/#contacto" className="button button-primary">Contactar</a></nav></header>
-    <section className="hero"><div className="hero-copy"><p className="eyebrow">NEOTECH ZGZ / SOBRE EL PROYECTO</p><h1>La tecnología debe ayudarte, no frenarte.</h1><p className="lede">NeoTech ZGZ ofrece soporte informático, desarrollo web y consultoría IT con una idea sencilla: explicar bien, priorizar lo importante y construir soluciones prácticas.</p><div className="hero-actions"><a className="button button-primary" href="/#contacto">Cuéntame tu reto</a><a className="button button-quiet" href="/servicios">Explorar servicios</a></div></div><aside className="hero-panel"><p className="panel-label">Nuestra forma de trabajar</p><div className="process-row"><span>01</span><p>Escuchar antes de recomendar</p></div><div className="process-row"><span>02</span><p>Priorizar seguridad y mantenimiento</p></div><div className="process-row"><span>03</span><p>Entregar con claridad y seguimiento</p></div></aside></section>
-    <section className="section"><div className="section-inner"><p className="eyebrow">01 / Enfoque</p><h2>Menos complejidad. Más control.</h2><div className="trust-grid"><article className="trust-card"><span className="project-index">01 / CLARIDAD</span><h3>Explicaciones comprensibles</h3><p>Opciones, límites y costes explicados antes de tomar decisiones.</p></article><article className="trust-card"><span className="project-index">02 / PRÁCTICA</span><h3>Soluciones mantenibles</h3><p>Elegimos herramientas y cambios que tengan sentido para el contexto del negocio.</p></article><article className="trust-card"><span className="project-index">03 / CONFIANZA</span><h3>Seguridad desde el diseño</h3><p>Reducimos riesgos con permisos mínimos, validación, actualizaciones y verificaciones razonables.</p></article></div></div></section>
-    <section className="tracking"><div className="section-inner tracking-grid"><div><p className="eyebrow">02 / Alcance</p><h2>Servicio local y soporte remoto.</h2><p className="lede">Base de operaciones en Zaragoza, Aragón, y atención remota según el servicio y la disponibilidad.</p></div><div className="hero-panel"><div className="process-row"><span>↗</span><p>Soporte y mantenimiento IT</p></div><div className="process-row"><span>↗</span><p>Desarrollo web y presencia digital</p></div><div className="process-row"><span>↗</span><p>Consultoría y planificación técnica</p></div><a className="button button-primary" href="/#contacto">Contactar con NeoTech</a></div></div></section>
-    <footer><div><a href="/" className="brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a><p>Tecnología clara para negocios que quieren avanzar.</p></div><div className="footer-links"><a href="/servicios">Servicios</a><a href="/proyectos">Proyectos</a><a href="/legal">Legal y privacidad</a></div></footer>
-  </main>
+  return (
+    <InnerPage eyebrow="NeoTech ZGZ / Sobre el proyecto" title="La tecnología debe ayudarte, no frenarte." description="NeoTech ZGZ ofrece soporte informático, desarrollo web y consultoría IT con una idea sencilla: explicar bien, priorizar lo importante y construir soluciones prácticas.">
+      <p className="eyebrow">Enfoque / Principios</p>
+      <h2>Menos complejidad. Más control.</h2>
+      <div className="trust-grid">
+        <article className="trust-card"><Code2 size={22} aria-hidden="true" /><h3>Explicaciones comprensibles</h3><p>Opciones, límites y costes explicados antes de tomar decisiones.</p></article>
+        <article className="trust-card"><Wrench size={22} aria-hidden="true" /><h3>Soluciones mantenibles</h3><p>Elegimos herramientas y cambios que tengan sentido para el contexto del negocio.</p></article>
+        <article className="trust-card"><ShieldCheck size={22} aria-hidden="true" /><h3>Seguridad desde el diseño</h3><p>Reducimos riesgos con permisos mínimos, validación, actualizaciones y verificaciones razonables.</p></article>
+      </div>
+      <div className="hero-panel" style={{ marginTop: 28 }}>
+        <p className="panel-label">Ámbito de servicio</p>
+        <div className="process-row"><span>↗</span><p>Soporte y mantenimiento IT</p></div>
+        <div className="process-row"><span>↗</span><p>Desarrollo web y presencia digital</p></div>
+        <div className="process-row"><span>↗</span><p>Consultoría y planificación técnica</p></div>
+        <p className="lede">Base de operaciones en Zaragoza, Aragón, y atención remota según el servicio y la disponibilidad.</p>
+        <a className="button button-primary" href="/contacto">Contactar con NeoTech</a>
+      </div>
+    </InnerPage>
+  )
 }
