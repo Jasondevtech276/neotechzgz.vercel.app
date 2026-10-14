@@ -3,14 +3,19 @@ export type Quote = {
   email: string
   company?: string
   service: string
-  hours: number
+  hours: number | null
   budget: number
   notes?: string
 }
 
 export async function saveQuote(quote: Quote) {
-  if (!Number.isFinite(quote.hours) || quote.hours < 1 || quote.hours > 1000) {
-    return { error: new Error('Invalid hours') }
+  const hourlyServices = new Set(['Soporte Remoto', 'Soporte Presencial', 'Consultoría IT', 'Análisis de Sistemas'])
+  if (hourlyServices.has(quote.service)) {
+    if (!Number.isInteger(quote.hours) || Number(quote.hours) < 1 || Number(quote.hours) > 1000) {
+      return { error: new Error('Invalid hours') }
+    }
+  } else if (quote.hours !== null) {
+    return { error: new Error('Hours must be omitted for fixed-price and monthly services') }
   }
   if (!Number.isFinite(quote.budget) || quote.budget < 0) {
     return { error: new Error('Invalid budget') }
