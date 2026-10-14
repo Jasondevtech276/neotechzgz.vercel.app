@@ -5,6 +5,7 @@ import { InnerPage } from '@/components/inner-page'
 export const metadata: Metadata = {
   title: 'Contacto | NeoTech ZGZ',
   description: 'Contacta con NeoTech ZGZ para soporte IT, desarrollo web o consultoría en Zaragoza.',
+  alternates: { canonical: 'https://neotechzgz.vercel.app/contacto' },
 }
 
 export default function ContactoPage() {
