@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getInvoiceSubscriptionId } from '@/lib/stripe-invoice-subscription.mjs'
 
 function requirePersistedRows(result: { error: { message: string } | null; data: Array<{ id: string }> | null }) {
   if (result.error || !result.data?.length) {
@@ -41,8 +42,7 @@ export async function POST(request: Request) {
       requirePersistedRows(result)
     } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
       const invoice = event.data.object as Stripe.Invoice
-      const invoiceData = invoice as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
-      const subscriptionId = typeof invoiceData.subscription === 'string' ? invoiceData.subscription : null
+      const subscriptionId = getInvoiceSubscriptionId(invoice)
       if (subscriptionId) {
         const result = await admin.from('payments')
           .update({ status: event.type === 'invoice.paid' ? 'paid' : 'failed', invoice_id: invoice.id, receipt_url: invoice.hosted_invoice_url ?? null, updated_at: new Date().toISOString() })
