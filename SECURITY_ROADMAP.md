@@ -1,6 +1,6 @@
 # NeoTech ZGZ — registro de incidencias y plan de seguridad
 
-**Última revisión:** 14 de octubre de 2026  
+**Última revisión:** 16 de octubre de 2026  
 **Alcance:** GitHub, Vercel, Supabase, Stripe y páginas públicas.  
 **Criterio:** solo se marcan como corregidos los cambios con evidencia verificable. Un build o una respuesta HTTP 200 no certifican el flujo completo ni la seguridad integral.
 
@@ -8,9 +8,9 @@
 
 - La aplicación ya tiene controles de seguridad en el código, migraciones de base de datos y un workflow de build/auditoría.
 - La publicación actual está completada en `neotechzgz.vercel.app`: deployment `dpl_4uUtoszXD29fpoY81dwPrVLtwVrB`, commit `515ff435a5108cb0088941ec81037a31b8ea4cce`, estado `READY`, target `production`. Se verificaron en producción la portada, las páginas de servicios, planes, proyectos, contacto, Sobre NeoTech, las tres páginas de detalle, sitemap, robots y `/api/health` con HTTP 200 y cabeceras de seguridad. El alias `www.neotechzgz.eu.org` sigue con DNS externo `misconfigured` y requiere reparación independiente.
-- El asesor de Supabase sigue avisando de que la protección contra contraseñas filtradas está desactivada.
+- Supabase Auth tiene activados los controles gratuitos de cambio seguro de contraseña y contraseña actual obligatoria. La protección contra contraseñas filtradas sigue desactivada: el proveedor exige plan Pro y no se intenta eludirlo.
 - Vercel marca 12 variables como `readable-secret`; además, hay variables de entorno con prefijo `NEXT_PUBLIC_` cuyos nombres sugieren credenciales de servidor. No se ha confirmado que se hayan expuesto al navegador, pero deben revisarse y sanearse.
-- Stripe tiene varios destinos de webhook activos. No se debe borrar ni cambiar ningún destino hasta verificar el historial de entregas y qué sistema procesa cada evento.
+- Stripe conserva tres webhooks activos; no se han retirado. Los dos endpoints Vercel usan Basil y el código publicado lee un campo de factura retirado por Basil; el arreglo está en la rama de revisión.
 - PR #27, PR #29 y PR #32 están fusionadas. La build de producción y el workflow de seguridad del commit publicado han terminado con éxito; los flujos autenticados de pago, presupuesto y correo siguen sujetos a pruebas controladas.
 
 ## Registro de incidencias
@@ -21,18 +21,25 @@
 | ENV-01 | Crítica | Vercel señala 12 variables con `readable-secret`: `CRON_SECRET`, `EMAILJS_PRIVATE_KEY`, `STRIPE_MCP_KEY`, `STRIPE_SECRET_KEY`, `VERCEL_AI_GATEWAY_KEY`, `REDIS_URL`, `KV_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, `SUPABASE_SECRET_KEY_2`, `SUPABASE_SECRET_KEY` y `SERVICE_ROLE` | Pendiente | Revisar accesos y clasificación en Vercel. Rotar claves de servidor expuestas o compartidas, una por una, tras confirmar consumidores y plan de reversión. No copiar valores a GitHub ni al chat. |
 | ENV-02 | Alta | Existen variables llamadas `NEXT_PUBLIC_POSTGRES_PASSWORD`, `NEXT_PUBLIC_POSTGRES_URL`, `NEXT_PUBLIC_POSTGRES_URL_NON_POOLING`, `NEXT_PUBLIC_POSTGRES_PRISMA_URL`, `NEXT_PUBLIC_POSTGRES_USER`, `NEXT_PUBLIC_POSTGRES_HOST`, `NEXT_PUBLIC_POSTGRES_DATABASE` y `NEXT_PUBLIC_SUPABASE_JWT_SECRET`, además de nombres duplicados `NEXT_PUBLIC_NEXT_PUBLIC_*` | Pendiente de saneamiento | El código consultado no referencia directamente esas variables de Postgres/JWT. Confirmar que son residuos de integración, eliminar o renombrar de forma controlada y rotar cualquier contraseña/secret real que haya podido ser expuesto. No eliminar variables usadas por la app sin probar antes. |
 | ENV-03 | Alta | Variables de Supabase duplicadas y con diferentes targets/nombres | Pendiente | Mantener una configuración única y consistente para Production, Preview y Development: URL del proyecto `qkzmpxyefuqdhyxwfjcw` y una publishable/anon key pública vigente. No usar service-role/JWT secret en variables públicas. |
-| AUTH-01 | Alta | Protección de contraseñas filtradas desactivada en Supabase Auth | Pendiente | Activar leaked-password protection en Auth settings y probar registro/cambio de contraseña. |
+| AUTH-01 | Alta | Protección de contraseñas filtradas desactivada en Supabase Auth; el proveedor rechaza activarla en el plan actual porque requiere Pro. Los controles de cambio seguro y contraseña actual obligatoria sí están activos. | Parcial por límite del plan | Mantener controles gratuitos; habilitar protección filtrada solo si el proyecto pasa a un plan que la incluye. |
 | STRIPE-01 | Crítica | Tres webhooks live habilitados: dos destinos a la ruta de Vercel y uno a una Edge Function de Supabase | Pendiente de arquitectura | Revisar en Stripe Dashboard los eventos entregados, errores y reintentos; acordar un procesador autoritativo. No desactivar destinos ni regenerar firmas antes de verificar dependencias. |
 | STRIPE-02 | Alta | El webhook marcaba una suscripción cancelada como `refunded`; cancelación y reembolso son estados distintos | Código corregido y desplegado; prueba end-to-end pendiente | `payments.subscription_status` separa el ciclo de vida de la suscripción del estado financiero. Validar eventos duplicados, retrasados y fuera de orden en modo test antes de cerrar. |
+| STRIPE-03 | Alta | API `2025-05-28.basil` deja de exponer `invoice.subscription`; el código publicado no encuentra el ID de suscripción en facturas. | Corrección preparada en `fix/stripe-basil-invoice-webhooks`; pruebas y CI pendientes | Leer `parent.subscription_details.subscription`, conservar compatibilidad legacy y validar en CI antes del despliegue. |
 | DB-01 | Baja / revisión periódica | Función public.handle_new_user usa SECURITY DEFINER; la inspección confirma SET search_path TO '' y referencia public.profiles de forma cualificada | Control seguro observado; privilegios/trigger pendientes de revisión completa | Mantener el search_path vacío y verificar que solo roles previstos pueden ejecutar la función y que el trigger está asociado a la tabla correcta. No cambiarlo a ciegas. |
-| DB-02 | Media | Tablas públicas principales tienen RLS activo; Storage también tiene RLS activo y no se observaron políticas de Storage | Revisado parcialmente | Confirmar si Storage se utiliza. Mantener denegación por defecto si no hay uso; si hay uso, definir políticas mínimas por bucket/propietario y probar acceso anónimo y entre usuarios. |
+| DB-02 | Media | RLS activo en las cinco tablas públicas revisadas; no hay buckets ni políticas de Storage. | Revisado parcialmente | Confirmar si Storage se utiliza. Mantener denegación por defecto si no hay uso; si hay uso, definir políticas mínimas por bucket/propietario y probar acceso anónimo y entre usuarios. |
 | DB-03 | Media | El asesor de rendimiento señala 7 índices no utilizados | Informativo | No borrar automáticamente: varios pueden ser nuevos o proteger operaciones futuras. Revisar métricas de uso tras un periodo suficiente y conservar índices de seguridad/retención salvo evidencia. |
-| OPS-01 | Alta | No se pudo activar protección de rama principal con los conectores disponibles | Pendiente | En GitHub, proteger `main`, exigir el workflow de seguridad, impedir force-push y restringir bypasses. |
-| OPS-02 | Alta | Falta verificar MFA de administradores, backups y recuperación | Pendiente | Exigir MFA para cuentas privilegiadas; documentar y probar restauración de base de datos y procedimientos de incidente. |
-| APP-01 | Alta | Flujos completos de checkout, portal, webhooks, cancelación y persistencia no están verificados end-to-end | Pendiente | Ejecutar pruebas en modo test con eventos válidos e inválidos y comprobar filas resultantes en Supabase antes de anunciar pagos listos. |
+| DB-04 | Media | Revisión parcial de metadatos: RLS habilitado en las cinco tablas públicas; Storage sin buckets ni políticas; dos funciones SECURITY DEFINER revisadas no ejecutables por `public`, `anon` o `authenticated`. | Parcial | Revisar triggers, restauración de backups y flujos autenticados; no hay cambios DDL pendientes de esta auditoría. |
+| OPS-01 | Alta | `main` carecía de reglas de protección | Corregido y verificado | Regla activa: PR obligatorio, conversaciones resueltas, check `build` estricto, aplicación a administradores, sin force-push ni borrado. |
+| OPS-02 | Alta | Falta verificar MFA de administradores, backups y recuperación | Pendiente | Verificar MFA en cuentas privilegiadas y documentar/probar restauración de backups. |
+| APP-01 | Alta | Flujos completos de checkout, portal, webhooks, cancelación y persistencia no están verificados end-to-end | Pendiente | Ejecutar eventos y pagos sintéticos solo en Stripe test mode cuando haya un contexto de prueba; no tocar pagos ni clientes reales. |
 | APP-02 | Media | CSP no está aplicada en modo enforcement | Pendiente de análisis | Definir una CSP compatible con Stripe, fuentes y analítica; probar primero en Report-Only y pasar a enforcement tras resolver violaciones. |
 | APP-03 | Media | Página 404 usaba una paleta distinta del sistema visual principal | Corregido y desplegado | Mantener revisión visual y de teclado en móvil/escritorio. |
 | WEB-01 | Media | Faltaban páginas de detalle para servicios clave y navegación transversal completa | Corregido y desplegado; revisión visual manual pendiente | Las rutas /servicios, /planes, /proyectos, /contacto, /sobre-neotech, /desarrollo-web, /ciberseguridad, /mantenimiento, portada, sitemap.xml, robots.txt y /api/health devuelven HTTP 200. |
+
+## Cambios preparados en la rama de revisión
+
+- Rama `fix/stripe-basil-invoice-webhooks`: extrae el ID de suscripción del formato Basil (`invoice.parent.subscription_details.subscription`) y mantiene compatibilidad con eventos antiguos.
+- Añade pruebas con `node:test` para los formatos anidados, legacy, expandidos y no aplicables; CI ejecutará `npm test` antes del build. Aún no está desplegado: falta CI verde y merge.
 
 ## Correcciones verificadas previamente
 
