@@ -1,6 +1,6 @@
 export default function LegalPage() {
   return (
-    <main className="legal-shell">
+    <main className="legal-shell public-legal">
       <a href="/" className="account-brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a>
       <p className="eyebrow">INFORMACIÓN LEGAL Y PRIVACIDAD</p>
       <h1>Tu tecnología, con reglas claras.</h1>
