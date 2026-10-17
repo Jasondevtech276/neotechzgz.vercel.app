@@ -22,12 +22,13 @@ export function CookieConsent() {
       setHasChoice(chosen)
       setVisible(!chosen)
     }
+    const openSettings = () => setVisible(true)
     sync()
-    window.addEventListener('neotech-open-cookie-settings', () => setVisible(true))
+    window.addEventListener('neotech-open-cookie-settings', openSettings)
     window.addEventListener('neotech-cookie-consent', sync)
     return () => {
       window.removeEventListener('neotech-cookie-consent', sync)
-      window.removeEventListener('neotech-open-cookie-settings', () => setVisible(true))
+      window.removeEventListener('neotech-open-cookie-settings', openSettings)
     }
   }, [])
 
