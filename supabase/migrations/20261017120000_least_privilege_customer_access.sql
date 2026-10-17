@@ -1,10 +1,8 @@
--- NeoTech ZGZ: atomic least-privilege access for customer data.
--- This migration changes privileges and RLS policies only; it does not update,
--- copy, delete, or transform customer rows.
+-- NeoTech ZGZ: least-privilege access for customer data.
+-- This single migration changes privileges and RLS policies only; it does not
+-- update, copy, delete, or transform customer rows.
 -- Apply only after validation in an isolated, non-production database.
 -- RLS governs rows; SQL grants independently govern which operations are possible.
-
-BEGIN;
 
 -- Remove broad browser-role grants, then restore only operations required by
 -- reviewed application routes. This does not affect the service_role/server key.
@@ -78,8 +76,6 @@ CREATE POLICY support_tickets_select_admin
 -- unless a later reviewed migration grants explicit privileges.
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
   REVOKE ALL PRIVILEGES ON TABLES FROM PUBLIC, anon, authenticated;
-
-COMMIT;
 
 -- Post-migration read-only checks (run in the isolated database):
 -- 1. Verify RLS is enabled on all five tables.
