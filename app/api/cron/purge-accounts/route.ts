@@ -8,9 +8,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const RETENTION_DAYS = 60
 const BATCH_SIZE = 10
-const DAY_MS = 24 * 60 * 60 * 1000
 
 function isAuthorized(request: Request, expected: string) {
   const authorization = request.headers.get('authorization') ?? ''
@@ -63,8 +61,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Cron is not configured' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
 
-  const now = new Date()
-  const cutoff = new Date(now.getTime() - RETENTION_DAYS * DAY_MS).toISOString()
   let admin: ReturnType<typeof createAdminClient>
   try {
     admin = createAdminClient()
@@ -87,7 +83,6 @@ export async function GET(request: Request) {
   }
 
   let deleted = 0
-  let pending = 0
   let skipped = 0
   const warnings = new Set<string>()
 
@@ -114,13 +109,6 @@ export async function GET(request: Request) {
         const secret = process.env.STRIPE_SECRET_KEY ?? process.env.STRIPE_MCP_KEY
         if (!secret) throw new Error('Stripe is not configured; account deletion deferred')
         await cancelOutstandingSubscriptions(getStripe(), subscriptionIds, customerIds)
-      }
-
-      // Retry subscription cancellation every day during the 60-day grace period,
-      // but do not anonymize or remove the account until the original deadline.
-      if (deletionRequestedAt.getTime() > new Date(cutoff).getTime()) {
-        pending += 1
-        continue
       }
 
       const { data: quotes, error: quotesSelectError } = await admin
@@ -188,11 +176,8 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    retentionDays: RETENTION_DAYS,
-    cutoff,
     processed: (accounts ?? []).length,
     deleted,
-    pending,
     skipped,
     ...(warnings.size ? { warnings: Array.from(warnings) } : {}),
   }, { headers: { 'Cache-Control': 'no-store' } })
