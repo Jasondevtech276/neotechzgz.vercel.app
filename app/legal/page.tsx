@@ -12,10 +12,10 @@ export default function LegalPage() {
           <p><strong>Nombre comercial:</strong> NeoTech ZGZ.<br />
             <strong>Titular y responsable:</strong> Mohammed Jassem Larbi, persona física.<br />
             <strong>NIF/NIE:</strong> X3091974S.<br />
-            <strong>Domicilio profesional declarado:</strong> Zaragoza, Aragón, España.<br />
+            <strong>Domicilio profesional declarado:</strong> Calle Mundir I 5 3A, 50001 Zaragoza, Aragón, España.<br />
             <strong>Correo de contacto y privacidad:</strong> <a href="mailto:larbimhed260796@gmail.com">larbimhed260796@gmail.com</a>.<br />
             <strong>Actividad:</strong> soporte informático presencial y remoto, desarrollo web y servicios tecnológicos.<br /><br />
-            El domicilio facilitado identifica únicamente la ciudad. Debe completarse con la dirección postal exigible antes de considerar este aviso legal listo para publicación definitiva. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
+            El domicilio se reproduce conforme a los datos facilitados por el titular. La forma postal exacta (por ejemplo, indicación de planta/puerta si procede) y la situación censal/fiscal deben verificarse antes de publicar definitivamente. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
           </p>
         </section>
 
@@ -82,7 +82,7 @@ export default function LegalPage() {
 
         <section id="contratacion">
           <h2>14. Contratación y consumidores</h2>
-          <p>El alcance, precio, calendario, entregables, soporte, renovación y condiciones de cancelación deben quedar indicados antes de aceptar cada presupuesto o compra. Los derechos legales de consumidores no quedan limitados por esta página. Cuando proceda una contratación a distancia con consumidores, deben facilitarse antes de contratar la información precontractual, las condiciones, el procedimiento de reclamación y la información sobre desistimiento y sus excepciones. Esta sección no sustituye unas condiciones de contratación completas para cada producto o servicio.</p>
+          <p>El alcance, precio, calendario, entregables, soporte, renovación y condiciones de cancelación deben quedar indicados antes de aceptar cada presupuesto o compra. Los derechos legales de consumidores no quedan limitados por esta página. Cuando proceda una contratación a distancia con consumidores, deben facilitarse antes de contratar la información precontractual, las condiciones, el procedimiento de reclamación y la información sobre desistimiento y sus excepciones. Esta sección no sustituye unas condiciones de contratación completas para cada producto o servicio. Se ha preparado un borrador separado, pendiente de revisión, en <a href="/condiciones">Condiciones de contratación</a>.</p>
         </section>
 
         <section>
@@ -90,7 +90,7 @@ export default function LegalPage() {
           <p>Esta información puede actualizarse por cambios legales, técnicos o de servicios. Se publicará la versión vigente con su fecha de revisión. Si un cambio exige consentimiento nuevo o información individual, se actuará de acuerdo con la normativa aplicable.</p>
         </section>
       </div>
-      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse el domicilio postal completo, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies y los flujos de contratación. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
+      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la forma postal exacta del domicilio, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies y los flujos de contratación. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
       <p><a href="/" className="button button-primary">Volver a la web</a></p>
     </main>
   );
