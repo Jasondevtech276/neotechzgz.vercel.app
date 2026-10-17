@@ -40,7 +40,7 @@ Before implementing customer remote support, require all of:
 
 ## Rollout and rollback
 - Do not apply the proposed migrations to production without a successful isolated test. A paid Supabase development branch was deliberately not created.
-- GitHub workflow run `39069518609` passed `npm ci`, `npm audit --audit-level=high`, `npm test`, and `npm run build` for an earlier PR commit. The current documentation commit `86cc9a810aea8d9d8d084233eccefb8021e5903b` had no associated GitHub workflow run at the time of this review; the current head is therefore not fully CI-validated yet. These checks do not execute or validate the SQL migrations.
+- GitHub workflow run `39069518609` passed `npm ci`, `npm audit --audit-level=high`, `npm test`, and `npm run build` for an earlier PR commit. A newer workflow was queued for the updated PR head during this review; verify the latest run is green before merge. These checks do not execute or validate the SQL migrations.
 - Before merge, validate effective grants and RLS, own-row access, ticket creation, profile display-name updates, admin dashboard access, and denial of cross-user reads/writes.
 - Do not merge or apply if any required customer workflow fails. Rollback must restore only the minimum privileges demonstrated to be required; do not broadly regrant CRUD to `anon` or `authenticated`.
 - This document and the proposed migration do not constitute a security certification.
