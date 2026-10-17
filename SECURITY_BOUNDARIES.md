@@ -18,8 +18,9 @@ This review used read-only queries against the current Supabase project and repo
 
 - RLS is enabled on `profiles`, `quotes`, `quote_status_history`, `payments`, and `support_tickets`.
 - The live table grants currently include broad table-level `SELECT/INSERT/UPDATE/DELETE` for both `anon` and `authenticated` on these tables. Existing RLS policies reduce row access, but the grants are broader than required; this is the principal issue addressed by the proposed least-privilege migration.
-- Existing customer policies scope profile, payment, support-ticket, and quote-history reads to the signed-in user. The current `quotes` policies are admin-only, so the proposed `quotes_select_own` policy is needed for the account endpoint.
-- The admin overview uses the authenticated session client to read payments and tickets. The proposed admin-only read policies are intended to preserve that dashboard after narrowing grants.
+- Current live policies include own-row access for profiles, payments, support tickets, and quote history; quote read/update/delete policies are currently admin-only. The proposed `quotes_select_own` policy adds account-page read access without granting customer writes.
+- The proposed `payments_select_admin` and `support_tickets_select_admin` policies are additional admin-only read policies, intended to preserve the admin overview after narrowing grants. They have not been applied or tested against the migration sequence.
+- Existing quote status-history insert policy checks `profiles.is_admin = true`. The proposed insert grant does not itself authorize non-admin inserts; RLS remains the row boundary.
 - Profile updates already have a migration restricting the grant to `display_name`. Keep that column-level boundary.
 - `lib/rate-limit.ts` fails closed in production if its Redis limiter is missing or unavailable. Confirm the required rate-limit environment variables exist in each Vercel environment before future deployment changes.
 - The repository's security roadmap records sensitive environment-variable hygiene work as pending, including server-only Supabase/Stripe/cron keys and stale `NEXT_PUBLIC_*` database/JWT variable names. This review did not read or modify secret values. Keep privileged keys out of Git and all `NEXT_PUBLIC_*` variables.
@@ -39,7 +40,7 @@ Before implementing customer remote support, require all of:
 
 ## Rollout and rollback
 - Do not apply the proposed migrations to production without a successful isolated test. A paid Supabase development branch was deliberately not created.
-- CI passed for the PR commit checked during this review: `npm ci`, `npm audit --audit-level=high`, `npm test`, and `npm run build`. These checks do not execute or validate the SQL migrations.
+- GitHub workflow run `39069518609` passed `npm ci`, `npm audit --audit-level=high`, `npm test`, and `npm run build` for an earlier PR commit. The current documentation commit `86cc9a810aea8d9d8d084233eccefb8021e5903b` had no associated GitHub workflow run at the time of this review; the current head is therefore not fully CI-validated yet. These checks do not execute or validate the SQL migrations.
 - Before merge, validate effective grants and RLS, own-row access, ticket creation, profile display-name updates, admin dashboard access, and denial of cross-user reads/writes.
 - Do not merge or apply if any required customer workflow fails. Rollback must restore only the minimum privileges demonstrated to be required; do not broadly regrant CRUD to `anon` or `authenticated`.
 - This document and the proposed migration do not constitute a security certification.
