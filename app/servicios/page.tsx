@@ -36,7 +36,7 @@ export default function ServicesPage() {
           </article>
         ))}
       </div>
-      <p className="inner-disclaimer">Los importes son orientativos. El alcance, la disponibilidad, los impuestos aplicables y el presupuesto final se confirmarán antes de comenzar cualquier trabajo.</p>
+      <p className="inner-disclaimer">Los importes son orientativos. Antes de contratar se confirmarán por escrito el precio total aplicable, los impuestos, el alcance, la disponibilidad y cualquier coste adicional. No se debe interpretar que los importes publicados incluyen o excluyen IVA hasta que se confirme expresamente en el presupuesto.</p>
       <div className="hero-panel" style={{ marginTop: 28 }}>
         <p className="panel-label">Proceso de trabajo</p>
         <div className="process-row"><span>01</span><p>Entendemos el problema</p></div>

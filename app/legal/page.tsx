@@ -12,10 +12,10 @@ export default function LegalPage() {
           <p><strong>Nombre comercial:</strong> NeoTech ZGZ.<br />
             <strong>Titular y responsable:</strong> Mohammed Jassem Larbi, persona física.<br />
             <strong>NIF/NIE:</strong> X3091974S.<br />
-            <strong>Domicilio profesional declarado:</strong> Calle Mundir I 5 3A, 50001 Zaragoza, Aragón, España.<br />
+            <strong>Domicilio para notificaciones:</strong> pendiente de confirmar antes de la publicación definitiva.<br />
             <strong>Correo de contacto y privacidad:</strong> <a href="mailto:larbimhed260796@gmail.com">larbimhed260796@gmail.com</a>.<br />
             <strong>Actividad:</strong> soporte informático presencial y remoto, desarrollo web y servicios tecnológicos.<br /><br />
-            El domicilio se reproduce conforme a los datos facilitados por el titular. La forma postal exacta (por ejemplo, indicación de planta/puerta si procede) y la situación censal/fiscal deben verificarse antes de publicar definitivamente. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
+            La dirección postal exacta se mantiene pendiente de confirmación por el titular antes de la publicación definitiva. La situación censal/fiscal debe verificarse por separado. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
           </p>
         </section>
 
@@ -46,7 +46,7 @@ export default function LegalPage() {
 
         <section>
           <h2>7. Plazos de conservación</h2>
-          <p>Aplicamos conservación limitada por finalidad, no un plazo único para todos los datos. Las consultas sin contratación se eliminan o anonimizan una vez resueltas y cerrado el seguimiento razonable, salvo necesidad justificada para reclamaciones. Los datos de cuenta se eliminan tras tramitar la solicitud, tan pronto como sea técnicamente posible y sin una espera general de 60 días; la ejecución puede depender de la siguiente tarea programada y de la comprobación/cancelación de suscripciones. La documentación contable y justificantes del negocio se conservan durante los plazos legales aplicables —el artículo 30 del Código de Comercio establece seis años para libros, correspondencia, documentación y justificantes empresariales, cuando resulte aplicable—. Las obligaciones tributarias y posibles interrupciones de plazos se evalúan por separado. Los registros de seguridad se limitan al período necesario según el riesgo y la finalidad. Al vencer el plazo, se eliminan o anonimizan los datos cuando sea viable.</p>
+          <p>Aplicamos conservación limitada por finalidad, no un plazo único para todos los datos. Las consultas sin contratación se eliminan o anonimizan una vez resueltas y cerrado el seguimiento razonable, salvo necesidad justificada para reclamaciones. La eliminación de datos de cuenta se tramitará tras verificar la solicitud, las suscripciones y las obligaciones de conservación. El plazo efectivo, incluida cualquier ventana técnica de recuperación y la ejecución de tareas programadas, debe comprobarse contra el comportamiento real del sistema antes de prometer un plazo concreto. La documentación contable y justificantes del negocio se conservan durante los plazos legales aplicables —el artículo 30 del Código de Comercio establece seis años para libros, correspondencia, documentación y justificantes empresariales, cuando resulte aplicable—. Las obligaciones tributarias y posibles interrupciones de plazos se evalúan por separado. Los registros de seguridad se limitan al período necesario según el riesgo y la finalidad. Al vencer el plazo, se eliminan o anonimizan los datos cuando sea viable.</p>
         </section>
 
         <section>
@@ -82,7 +82,7 @@ export default function LegalPage() {
 
         <section id="contratacion">
           <h2>14. Contratación y consumidores</h2>
-          <p>El alcance, precio, calendario, entregables, soporte, renovación y condiciones de cancelación deben quedar indicados antes de aceptar cada presupuesto o compra. Los derechos legales de consumidores no quedan limitados por esta página. Cuando proceda una contratación a distancia con consumidores, deben facilitarse antes de contratar la información precontractual, las condiciones, el procedimiento de reclamación y la información sobre desistimiento y sus excepciones. Esta sección no sustituye unas condiciones de contratación completas para cada producto o servicio. Las condiciones generales siguen pendientes de revisión y no se presentan aquí como versión contractual definitiva.</p>
+          <p>El alcance, precio total con los impuestos aplicables, calendario, entregables, soporte, renovación y condiciones de cancelación deben quedar indicados de forma clara antes de aceptar cada presupuesto o compra. Los derechos legales de consumidores no quedan limitados por esta página. Cuando proceda una contratación a distancia con consumidores, deben facilitarse antes de contratar la información precontractual, las condiciones, el procedimiento de reclamación y la información sobre desistimiento y sus excepciones. Esta sección no sustituye unas condiciones de contratación completas para cada producto o servicio. Las condiciones generales siguen pendientes de revisión y no se presentan aquí como versión contractual definitiva.</p>
         </section>
 
         <section>
@@ -90,7 +90,7 @@ export default function LegalPage() {
           <p>Esta información puede actualizarse por cambios legales, técnicos o de servicios. Se publicará la versión vigente con su fecha de revisión. Si un cambio exige consentimiento nuevo o información individual, se actuará de acuerdo con la normativa aplicable.</p>
         </section>
       </div>
-      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la forma postal exacta del domicilio, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies y los flujos de contratación. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
+      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la dirección postal para notificaciones, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies, los plazos efectivos de eliminación y los flujos de contratación. Los importes publicados no se modificarán ni se describirán como IVA incluido o excluido hasta verificar su tratamiento fiscal. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
       <p><a href="/" className="button button-primary">Volver a la web</a></p>
     </main>
   );

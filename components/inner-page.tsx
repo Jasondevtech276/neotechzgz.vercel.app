@@ -59,7 +59,9 @@ export function InnerPage({ eyebrow, title, description, children }: InnerPagePr
           <Link href="/proyectos">Proyectos</Link>
           <Link href="/sobre-neotech">Sobre NeoTech</Link>
           <Link href="/contacto">Contacto</Link>
-          <Link href="/legal">Información legal</Link>
+          <Link href="/legal">Aviso legal</Link>
+          <Link href="/privacidad">Privacidad</Link>
+          <Link href="/condiciones">Condiciones (en revisión)</Link>
           <Link href="/login">Acceder</Link>
         </div>
       </footer>
