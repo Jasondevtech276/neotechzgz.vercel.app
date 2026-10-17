@@ -29,7 +29,7 @@ export default function PlanesPage() {
           </article>
         ))}
       </div>
-      <p className="inner-disclaimer">Los tiempos indicados son objetivos de primera respuesta, no una garantía de resolución. Confirma disponibilidad, cobertura, horas no consumidas y condiciones por escrito antes de contratar.</p>
+      <p className="inner-disclaimer">Los tiempos indicados son objetivos de primera respuesta, no una garantía de resolución. Los importes y su tratamiento fiscal están pendientes de verificación: antes de contratar se facilitará el precio total aplicable. La propuesta de servicio prevé renovación mensual automática, sin permanencia y con cancelación antes del siguiente cobro; estas condiciones deberán figurar expresamente en la contratación y no se activará ningún cobro recurrente por esta página.</p>
     </InnerPage>
   )
 }
