@@ -1,9 +1,25 @@
 
-/* Additional route pages: same dark/lime NeoTech design language. */
+/* Shared public-page styling for the midnight and cyan NeoTech identity. */
 .inner-hero{min-height:700px;padding-top:150px}
 .inner-note h2{margin:0 0 16px;font-size:clamp(28px,3vw,40px);line-height:1.05}
 .inner-note .lede{font-size:15px}
 .inner-content{padding-top:0}
+.site .brand em{color:var(--accent)}
+.legal-grid{align-items:start}
+.legal-grid a{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 45%,transparent);text-underline-offset:3px}
+.legal-grid a:hover{text-decoration-color:currentColor}
+.legal-grid a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.public-auth{display:grid;place-items:center;padding:32px 20px;background:radial-gradient(circle at 82% -8%,rgba(34,211,238,.12),transparent 35%),var(--bg);color:var(--text)}
+.public-auth .admin-card{width:min(100%,480px);padding:clamp(24px,5vw,40px);border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,var(--surface-2),var(--surface));box-shadow:var(--shadow)}
+.public-auth h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,6vw,46px);letter-spacing:-.055em;line-height:1.05}
+.public-auth label{color:var(--muted)}
+.public-auth input{border-radius:10px;border-color:var(--line);background:var(--bg);color:var(--text)}
+.public-auth input:focus-visible{border-color:var(--accent);outline:2px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:1px}
+.public-auth .cta{border:1px solid transparent;background:var(--accent);color:var(--accent-ink);transition:transform .2s ease,filter .2s ease}
+.public-auth .cta:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.06)}
+.public-auth .cta:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.public-auth a{color:var(--accent)}
+.public-auth a:hover{text-decoration:underline;text-underline-offset:3px}
 .inner-disclaimer{margin:28px 0 0;padding:18px 20px;border-left:2px solid var(--accent);background:var(--surface-2);color:var(--muted);font-size:13px;line-height:1.65}
 .inner-contact-grid{padding-bottom:24px}
 .inner-page-nav{display:flex;align-items:center;gap:clamp(10px,1.6vw,22px);color:var(--muted);font-size:13px}
@@ -24,6 +40,7 @@
  .inner-hero{padding-top:120px;padding-bottom:56px}
  .inner-page-nav{max-width:56vw;gap:14px;font-size:12px}
  .inner-content{padding-top:0}
+ .legal-grid{grid-template-columns:minmax(0,1fr)}
 }
 
 /* Persistent entry point so visitors can revisit or withdraw cookie consent. */

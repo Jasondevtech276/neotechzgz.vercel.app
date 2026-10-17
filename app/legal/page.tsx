@@ -1,10 +1,12 @@
+import { InnerPage } from '@/components/inner-page'
+
 export default function LegalPage() {
   return (
-    <main className="legal-shell">
-      <a href="/" className="account-brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a>
-      <p className="eyebrow">INFORMACIÓN LEGAL Y PRIVACIDAD</p>
-      <h1>Tu tecnología, con reglas claras.</h1>
-      <p className="legal-lede">Información sobre el titular, la privacidad, las cookies y la contratación de servicios de NeoTech ZGZ. Última revisión: 17 de octubre de 2026.</p>
+    <InnerPage
+      eyebrow="Información legal y privacidad"
+      title="Tu tecnología, con reglas claras."
+      description="Información sobre el titular, la privacidad, las cookies y la contratación de servicios de NeoTech ZGZ. Última revisión: 17 de octubre de 2026."
+    >
 
       <div className="legal-grid">
         <section id="aviso-legal">
@@ -91,7 +93,6 @@ export default function LegalPage() {
         </section>
       </div>
       <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la dirección postal para notificaciones, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies, los plazos efectivos de eliminación y los flujos de contratación. Los importes publicados no se modificarán ni se describirán como IVA incluido o excluido hasta verificar su tratamiento fiscal. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
-      <p><a href="/" className="button button-primary">Volver a la web</a></p>
-    </main>
+    </InnerPage>
   );
 }
