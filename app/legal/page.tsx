@@ -64,9 +64,9 @@ export default function LegalPage() {
           <p>Se aplicarán medidas técnicas y organizativas proporcionales al riesgo, controles de acceso, uso limitado de credenciales y gestión de incidentes. Ningún sistema puede garantizar seguridad absoluta. Cuando NeoTech ZGZ acceda a datos personales por cuenta de un cliente al prestar soporte, alojamiento o mantenimiento, las funciones de responsable y encargado deben determinarse por servicio y formalizarse, cuando proceda, mediante un contrato de encargo del tratamiento conforme al artículo 28 del RGPD. El cliente debe evitar enviar contraseñas o datos personales por canales inseguros.</p>
         </section>
 
-        <section>
+        <section id="cookies">
           <h2>11. Cookies y tecnologías similares</h2>
-          <p>Las cookies técnicas estrictamente necesarias permiten el funcionamiento del sitio y recordar la elección de privacidad. Google Analytics se utiliza para medición de audiencia y Meta Pixel para medición/publicidad solo después de pulsar «Aceptar analítica y marketing». Si rechazas, esos scripts no deben cargarse. Puedes cambiar tu elección en cualquier momento mediante el botón «Preferencias de cookies» disponible en la web. La preferencia se recuerda durante seis meses. La duración concreta y el inventario de cookies de terceros deben comprobarse en el navegador y actualizarse si cambian las herramientas.</p>
+          <p>Las cookies técnicas estrictamente necesarias permiten el funcionamiento del sitio y recordar la elección de privacidad. Google Analytics para medición de audiencia y Meta Pixel para medición/publicidad solo deben cargarse si autorizas la categoría correspondiente en el banner o en las preferencias. Si rechazas una categoría, sus scripts no deben cargarse. Puedes cambiar tu elección en cualquier momento mediante el botón «Preferencias de cookies» disponible en la web. La preferencia se recuerda durante seis meses. La duración concreta y el inventario de cookies de terceros deben comprobarse en el navegador y actualizarse si cambian las herramientas.</p>
           <p>Google: <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">política de privacidad</a>. Meta: <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noreferrer">política de privacidad</a>.</p>
         </section>
 
