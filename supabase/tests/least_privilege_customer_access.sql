@@ -117,10 +117,14 @@ BEGIN
        'public.admin_update_quote_status(uuid,text)',
        'EXECUTE'
      )
-     OR has_function_privilege(
-       'PUBLIC',
-       'public.admin_update_quote_status(uuid,text)',
-       'EXECUTE'
+     OR EXISTS (
+       SELECT 1
+       FROM pg_proc p
+       CROSS JOIN LATERAL aclexplode(COALESCE(p.proacl, acldefault('f', p.proowner))) acl
+       WHERE p.proname = 'admin_update_quote_status'
+         AND p.pronamespace = 'public'::regnamespace
+         AND acl.privilege_type = 'EXECUTE'
+         AND (acl.grantee = 0 OR acl.grantee = (SELECT oid FROM pg_roles WHERE rolname = 'anon'))
      ) THEN
     RAISE EXCEPTION 'Atomic quote-status function execution grants are too broad or missing';
   END IF;
