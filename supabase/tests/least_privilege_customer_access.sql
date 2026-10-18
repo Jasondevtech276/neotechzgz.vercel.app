@@ -129,6 +129,19 @@ BEGIN
     RAISE EXCEPTION 'Atomic quote-status function execution grants are too broad or missing';
   END IF;
 
+  IF has_function_privilege(
+       'anon',
+       'public.prevent_client_deleted_at_changes()',
+       'EXECUTE'
+     )
+     OR has_function_privilege(
+       'authenticated',
+       'public.prevent_client_deleted_at_changes()',
+       'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'Client roles must not directly execute the account-retention trigger function';
+  END IF;
+
   -- Check future table defaults for postgres, including PUBLIC and API roles.
   IF EXISTS (
     SELECT 1
