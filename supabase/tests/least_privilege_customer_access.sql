@@ -94,6 +94,55 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'Expected customer/admin read policies are missing';
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'admin_update_quote_status'
+      AND pg_get_function_identity_arguments(p.oid) = 'p_quote_id uuid, p_status text'
+      AND NOT p.prosecdef
+  ) THEN
+    RAISE EXCEPTION 'Atomic quote-status function is missing or not SECURITY INVOKER';
+  END IF;
+
+  IF NOT has_function_privilege(
+       'authenticated',
+       'public.admin_update_quote_status(uuid,text)',
+       'EXECUTE'
+     )
+     OR has_function_privilege(
+       'anon',
+       'public.admin_update_quote_status(uuid,text)',
+       'EXECUTE'
+     )
+     OR has_function_privilege(
+       'PUBLIC',
+       'public.admin_update_quote_status(uuid,text)',
+       'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'Atomic quote-status function execution grants are too broad or missing';
+  END IF;
+
+  -- Fail closed if any table-creating role still gives future-table CRUD to
+  -- PUBLIC/anon/authenticated. This intentionally catches the live
+  -- supabase_admin default ACL, which the migration owner may not be able to alter.
+  IF EXISTS (
+    SELECT 1
+    FROM pg_default_acl d
+    CROSS JOIN LATERAL aclexplode(d.defaclacl) acl
+    LEFT JOIN pg_roles grantee ON grantee.oid = acl.grantee
+    WHERE d.defaclobjtype = 'r'
+      AND d.defaclnamespace = 'public'::regnamespace
+      AND d.defaclrole IN (
+        SELECT oid FROM pg_roles WHERE rolname IN ('postgres', 'supabase_admin')
+      )
+      AND (acl.grantee = 0 OR grantee.rolname IN ('anon', 'authenticated'))
+      AND acl.privilege_type IN ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER')
+  ) THEN
+    RAISE EXCEPTION 'Unsafe default table privileges remain for PUBLIC/anon/authenticated';
+  END IF;
 END $$;
 
 -- Required authenticated integration tests with synthetic customer A,
