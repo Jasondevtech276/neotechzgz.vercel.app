@@ -106,6 +106,11 @@ CREATE POLICY support_tickets_select_admin
     )
   );
 
+-- This function is intended to run only as the profiles.deleted_at trigger.
+-- Its trigger continues to execute; clients do not need direct EXECUTE rights.
+REVOKE ALL PRIVILEGES ON FUNCTION public.prevent_client_deleted_at_changes()
+  FROM PUBLIC, anon, authenticated;
+
 -- Future application tables, sequences, and functions created by postgres:
 -- tables: remove API-role defaults; sequences: remove API-role/PUBLIC access;
 -- functions: remove API-role defaults in public and PUBLIC EXECUTE globally.
