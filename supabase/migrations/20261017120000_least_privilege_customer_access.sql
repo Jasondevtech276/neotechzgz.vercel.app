@@ -6,15 +6,10 @@
 
 BEGIN;
 
--- Scope note: this migration closes grants on the existing application tables and
--- hardens defaults for tables created by postgres. The live project also has
--- unsafe defaults for supabase_admin, but the migration role cannot alter that
--- role's defaults (42501). Do not try to elevate roles or bypass PostgreSQL
--- ownership rules. That platform-level issue remains a separate deployment
--- blocker; it is surfaced by the SQL test and SECURITY_BOUNDARIES.md.
--- Removing the preflight allows the existing-table least-privilege changes to
--- be validated in an isolated database without pretending the default-ACL gap
--- is resolved. Do not merge/deploy this change until all rollout gates pass.
+-- Harden existing application tables and defaults for objects created by
+-- postgres. Supabase's internal supabase_admin defaults are platform-managed;
+-- do not attempt to alter that role or elevate privileges to bypass ownership.
+-- Validate the effective privileges on existing objects separately.
 
 -- Remove both table-level and column-level privileges. REVOKE on a table does
 -- not remove independently granted column privileges, so handle both layers.
@@ -111,8 +106,23 @@ CREATE POLICY support_tickets_select_admin
     )
   );
 
--- Future application tables created by postgres remain closed by default.
+-- Future application tables, sequences, and functions created by postgres:
+-- tables: remove API-role defaults; sequences: remove API-role/PUBLIC access;
+-- functions: remove API-role defaults in public and PUBLIC EXECUTE globally.
+-- PostgreSQL applies per-schema defaults in addition to global defaults, so
+-- revoking PUBLIC EXECUTE must be global (not just IN SCHEMA public). This
+-- affects future functions created by postgres in every schema, not existing
+-- functions. Grant EXECUTE explicitly to intended callers for each new RPC.
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
   REVOKE ALL PRIVILEGES ON TABLES FROM PUBLIC, anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL PRIVILEGES ON SEQUENCES FROM PUBLIC, anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  REVOKE ALL PRIVILEGES ON FUNCTIONS FROM anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres
+  REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 COMMIT;
