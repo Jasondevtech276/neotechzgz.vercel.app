@@ -44,7 +44,7 @@ Before implementing customer remote support, require all of:
 
 ## Rollout and rollback
 - Do not apply the proposed migration to production without a successful isolated test. A paid Supabase development branch was deliberately not created.
-- The earlier GitHub workflow passed `npm ci`, `npm audit --audit-level=high`, `npm test`, and `npm run build` for an earlier PR commit. The latest code's Vercel check is pending and SQL is not executed by those application checks.
+- Added `.github/workflows/security-validation.yml` to run `npm ci`, `npm audit --audit-level=high`, `npm test`, and `npm run build` for PRs and relevant pushes. At the time of this update, GitHub Actions has not returned a run for the latest commit and the Vercel check remains pending. SQL migration validation is not covered by this Node workflow.
 - Before merge, validate the migration syntax and order in a disposable/local database; run `supabase/tests/least_privilege_customer_access.sql`; and test own-row isolation, profile display-name updates, ticket creation, admin quote status/history, and admin payment/ticket reads.
 - The isolated test must prove that defaults for future tables, sequences, and functions created by `postgres` are least-privilege. Inventory existing public functions and sequences separately; future-object defaults do not revoke permissions on existing objects. Do not bypass ownership boundaries by elevating roles.
 - Use synthetic customer A, customer B, and admin accounts. Confirm cross-user reads fail, customer quote/payment/history writes fail, and customers cannot set ticket status/timestamps.
