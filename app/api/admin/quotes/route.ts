@@ -36,11 +36,19 @@ export async function PATCH(request: Request) {
   if (!id || !allowed.includes(status)) return NextResponse.json({ error: 'Datos no válidos' }, { status: 400 })
   const { data: quote, error: quoteError } = await supabase.from('quotes').select('email,name,client_code,service').eq('id', id).maybeSingle()
   if (quoteError || !quote) return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 404 })
-  const { error } = await supabase.from('quotes').update({ status }).eq('id', id)
-  if (error) return NextResponse.json({ error: 'No se pudo actualizar el estado' }, { status: 500 })
-  const { data: { user } } = await supabase.auth.getUser()
-  const { error: historyError } = await supabase.from('quote_status_history').insert({ quote_id: id, status, changed_by: user?.id ?? null })
-  if (historyError) return NextResponse.json({ error: 'Estado actualizado, pero no se pudo registrar el historial' }, { status: 500 })
+  // A single PostgreSQL transaction updates the quote and appends its history.
+  // If either operation fails, both changes roll back.
+  const { error: statusChangeError } = await supabase.rpc('admin_update_quote_status', {
+    p_quote_id: id,
+    p_status: status,
+  })
+  if (statusChangeError) {
+    console.error('[v0] atomic quote status change failed', statusChangeError)
+    const statusCode = statusChangeError.code === '42501' ? 403 : statusChangeError.code === 'P0002' ? 404 : 500
+    return NextResponse.json({
+      error: statusCode === 403 ? 'No autorizado' : statusCode === 404 ? 'Solicitud no encontrada' : 'No se pudo actualizar el estado y su historial',
+    }, { status: statusCode })
+  }
   try {
     await sendEmail({ to_email: quote.email, to_name: quote.name, client_code: quote.client_code, status, service: quote.service, message: `Tu solicitud ${quote.client_code} ha cambiado a: ${status}.`, tracking_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://neotechzgz.vercel.app'}/#seguimiento` })
   } catch (emailError) {
