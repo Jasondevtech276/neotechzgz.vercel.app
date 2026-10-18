@@ -1,0 +1,42 @@
+name: Security validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, security/least-privilege-access-controls]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-validation:
+    name: Dependencies, tests, and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Audit high and critical dependency vulnerabilities
+        run: npm audit --audit-level=high
+
+      - name: Run automated tests
+        run: npm test
+
+      - name: Build production application
+        run: npm run build
