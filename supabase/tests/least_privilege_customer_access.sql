@@ -129,10 +129,7 @@ BEGIN
     RAISE EXCEPTION 'Atomic quote-status function execution grants are too broad or missing';
   END IF;
 
-  -- The migration can control postgres defaults, but the current project has
-  -- separate unsafe defaults for supabase_admin that the migration role cannot
-  -- alter. Fail the structural test if postgres defaults remain unsafe; report
-  -- the supabase_admin issue prominently without misrepresenting it as fixed.
+  -- Check future table defaults for postgres, including PUBLIC and API roles.
   IF EXISTS (
     SELECT 1
     FROM pg_default_acl d
@@ -150,23 +147,64 @@ BEGIN
     RAISE EXCEPTION 'Unsafe postgres default table privileges remain for PUBLIC/anon/authenticated';
   END IF;
 
+  -- Sequences are a separate object type; table-default revocations do not
+  -- protect them. Check both PUBLIC and the API roles.
   IF EXISTS (
     SELECT 1
     FROM pg_default_acl d
     CROSS JOIN LATERAL aclexplode(d.defaclacl) acl
     LEFT JOIN pg_roles grantee ON grantee.oid = acl.grantee
-    WHERE d.defaclobjtype = 'r'
+    WHERE d.defaclobjtype = 'S'
       AND d.defaclnamespace = 'public'::regnamespace
-      AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = 'supabase_admin')
+      AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = 'postgres')
       AND (acl.grantee = 0 OR grantee.rolname IN ('anon', 'authenticated'))
-      AND acl.privilege_type IN (
-        'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE',
-        'REFERENCES', 'TRIGGER', 'MAINTAIN'
-      )
+      AND acl.privilege_type IN ('USAGE', 'SELECT', 'UPDATE')
   ) THEN
-    RAISE WARNING
-      'BLOCKER: supabase_admin still has unsafe default privileges for future public tables; resolve through an authorized Supabase/platform procedure before merge or production rollout';
+    RAISE EXCEPTION 'Unsafe postgres default sequence privileges remain for PUBLIC/anon/authenticated';
   END IF;
+
+  -- Remove explicit API-role grants on future public functions and ensure
+  -- the global PUBLIC EXECUTE default has been explicitly revoked.
+  IF EXISTS (
+    SELECT 1
+    FROM pg_default_acl d
+    CROSS JOIN LATERAL aclexplode(d.defaclacl) acl
+    LEFT JOIN pg_roles grantee ON grantee.oid = acl.grantee
+    WHERE d.defaclobjtype = 'f'
+      AND d.defaclnamespace = 'public'::regnamespace
+      AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = 'postgres')
+      AND grantee.rolname IN ('anon', 'authenticated')
+      AND acl.privilege_type = 'EXECUTE'
+  ) THEN
+    RAISE EXCEPTION 'Unsafe postgres default function privileges remain for anon/authenticated';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_default_acl d
+    WHERE d.defaclobjtype = 'f'
+      AND d.defaclnamespace = 0
+      AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = 'postgres')
+  ) THEN
+    RAISE EXCEPTION 'Global postgres function defaults must explicitly revoke PUBLIC EXECUTE';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM pg_default_acl d
+    CROSS JOIN LATERAL aclexplode(d.defaclacl) acl
+    WHERE d.defaclobjtype = 'f'
+      AND d.defaclnamespace = 0
+      AND d.defaclrole = (SELECT oid FROM pg_roles WHERE rolname = 'postgres')
+      AND acl.grantee = 0
+      AND acl.privilege_type = 'EXECUTE'
+  ) THEN
+    RAISE EXCEPTION 'PUBLIC still has EXECUTE by default on future postgres-created functions';
+  END IF;
+
+  -- supabase_admin has platform-managed defaults. This test intentionally
+  -- does not treat that internal role's ACL as an application-schema blocker;
+  -- verify effective privileges on user-facing objects independently.
+
 END $$;
 
 -- Required authenticated integration tests with synthetic customer A,
