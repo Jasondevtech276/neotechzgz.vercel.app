@@ -35,8 +35,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="admin-shell min-h-screen px-5 py-20 text-white">
-      <div className="admin-card mx-auto max-w-md rounded-sm p-8">
+    <main className="admin-shell public-auth min-h-screen px-5 py-20 text-white">
+      <div className="admin-card mx-auto max-w-md rounded-2xl p-8">
         <p className="mono text-xs tracking-[.3em] text-cyan-300">NEOTECH / ACCESS</p>
         <h1 className="mt-3 text-3xl font-bold">Recuperar contraseña</h1>
         <p className="mt-3 text-sm text-slate-400">

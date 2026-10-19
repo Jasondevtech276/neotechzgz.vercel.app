@@ -31,8 +31,8 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   }
 
   return (
-    <main className="admin-shell min-h-screen px-5 py-20 text-white">
-      <div className="admin-card mx-auto max-w-md rounded-sm p-8">
+    <main className="admin-shell public-auth min-h-screen px-5 py-20 text-white">
+      <div className="admin-card mx-auto max-w-md rounded-2xl p-8">
         <p className="mono text-xs tracking-[.3em] text-cyan-300">NEOTECH / ACCESS</p>
         {canResetPassword ? (
           <>
