@@ -1,6 +1,6 @@
 export default function LegalPage() {
   return (
-    <main className="legal-shell">
+    <main className="legal-shell public-legal">
       <a href="/" className="account-brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a>
       <p className="eyebrow">INFORMACIÓN LEGAL Y PRIVACIDAD</p>
       <h1>Tu tecnología, con reglas claras.</h1>
@@ -82,7 +82,7 @@ export default function LegalPage() {
 
         <section id="contratacion">
           <h2>14. Contratación y consumidores</h2>
-          <p>El alcance, precio, calendario, entregables, soporte, renovación y condiciones de cancelación deben quedar indicados antes de aceptar cada presupuesto o compra. Los derechos legales de consumidores no quedan limitados por esta página. Cuando proceda una contratación a distancia con consumidores, deben facilitarse antes de contratar la información precontractual, las condiciones, el procedimiento de reclamación y la información sobre desistimiento y sus excepciones. Esta sección no sustituye unas condiciones de contratación completas para cada producto o servicio. Se ha preparado un borrador separado, pendiente de revisión, en <a href="/condiciones">Condiciones de contratación</a>.</p>
+          <p>El alcance, precio, calendario, entregables, soporte, renovación y condiciones de cancelación deben quedar indicados antes de aceptar cada presupuesto o compra. Los derechos legales de consumidores no quedan limitados por esta página. Cuando proceda una contratación a distancia con consumidores, deben facilitarse antes de contratar la información precontractual, las condiciones, el procedimiento de reclamación y la información sobre desistimiento y sus excepciones. Esta sección no sustituye unas condiciones de contratación completas para cada producto o servicio. Las condiciones generales siguen pendientes de revisión y no se presentan aquí como versión contractual definitiva.</p>
         </section>
 
         <section>

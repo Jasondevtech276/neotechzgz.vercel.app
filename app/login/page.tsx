@@ -19,8 +19,8 @@ export default function LoginPage() {
 
   async function submit(event: FormEvent) { event.preventDefault(); setLoading(true); setError(''); try { const response = await fetch('/api/auth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'login', email, password }) }); if (!response.ok) { const data = await response.json().catch(() => null); setError(data?.error?.toLowerCase().includes('confirm') ? 'Confirma tu email antes de iniciar sesión.' : 'Email o contraseña no válidos') } else router.replace('/account'); } catch { setError('No se pudo conectar con el servicio de autenticación.'); } finally { setLoading(false) } }
   return (
-    <main className="admin-shell min-h-screen px-5 py-20 text-white">
-      <div className="admin-card mx-auto max-w-md rounded-sm p-8">
+    <main className="admin-shell public-auth min-h-screen px-5 py-20 text-white">
+      <div className="admin-card mx-auto max-w-md rounded-2xl p-8">
         <p className="mono text-xs tracking-[.3em] text-cyan-300">NEOTECH / ACCESS</p>
         <h1 className="mt-3 text-3xl font-bold">Iniciar sesión</h1>
         <p className="mt-3 text-sm text-slate-400">Accede para consultar tus pedidos y su trazabilidad.</p>
@@ -30,9 +30,7 @@ export default function LoginPage() {
             <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="field mt-2 w-full" autoComplete="email" />
           </label>
           <PasswordField label="Contraseña" value={password} onChange={setPassword} autoComplete="current-password" />
-          <a className="text-sm text-cyan-300 hover:underline" href="/forgot-password">
-            ¿Has olvidado tu contraseña?
-          </a>
+          <a className="text-sm text-cyan-300 hover:underline" href="/forgot-password">¿Has olvidado tu contraseña?</a>
           {error && <p role="alert" className="text-sm text-amber-300">{error}</p>}
           <button disabled={loading} className="cta rounded-lg py-3 font-semibold">
             {loading ? 'Comprobando...' : 'Entrar'}
