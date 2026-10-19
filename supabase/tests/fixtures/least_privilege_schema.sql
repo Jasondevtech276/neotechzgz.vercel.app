@@ -3,44 +3,32 @@
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
 CREATE SCHEMA auth;
-CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;
+GRANT USAGE ON SCHEMA auth TO anon, authenticated;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
+  SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid
+$$;
+GRANT EXECUTE ON FUNCTION auth.uid() TO PUBLIC;
 
 CREATE TABLE public.profiles (
-  id uuid PRIMARY KEY,
-  display_name text,
-  is_admin boolean NOT NULL DEFAULT false,
-  deleted_at timestamptz,
-  created_at timestamptz DEFAULT now()
+  id uuid PRIMARY KEY, display_name text, is_admin boolean NOT NULL DEFAULT false,
+  deleted_at timestamptz, created_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.quotes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  status varchar NOT NULL DEFAULT 'recibida',
-  name text,
-  budget_calculated numeric,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL,
+  status varchar NOT NULL DEFAULT 'recibida', name text, budget_calculated numeric,
   created_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.quote_status_history (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  quote_id uuid NOT NULL REFERENCES public.quotes(id),
-  status text NOT NULL,
-  note text,
-  changed_by uuid,
-  created_at timestamptz DEFAULT now()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), quote_id uuid NOT NULL REFERENCES public.quotes(id),
+  status text NOT NULL, note text, changed_by uuid, created_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  amount numeric,
-  status text,
-  created_at timestamptz DEFAULT now()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL,
+  amount numeric, status text, created_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.support_tickets (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  subject text NOT NULL,
-  message text NOT NULL,
-  status text NOT NULL DEFAULT 'open',
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL,
+  subject text NOT NULL, message text NOT NULL, status text NOT NULL DEFAULT 'open',
   created_at timestamptz DEFAULT now()
 );
 
