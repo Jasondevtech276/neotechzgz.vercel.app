@@ -45,6 +45,50 @@ BEGIN
     END LOOP;
   END LOOP;
 
+  -- Check every authenticated write grant, including column-level grants.
+  -- Table-level REVOKE does not remove independently granted column privileges.
+  FOREACH target_table IN ARRAY ARRAY[
+    'profiles',
+    'quotes',
+    'quote_status_history',
+    'payments',
+    'support_tickets'
+  ] LOOP
+    IF has_table_privilege('authenticated', format('public.%I', target_table), 'INSERT')
+       OR has_table_privilege('authenticated', format('public.%I', target_table), 'UPDATE')
+       OR has_table_privilege('authenticated', format('public.%I', target_table), 'DELETE')
+       OR has_table_privilege('authenticated', format('public.%I', target_table), 'TRUNCATE')
+       OR has_table_privilege('authenticated', format('public.%I', target_table), 'REFERENCES')
+       OR has_table_privilege('authenticated', format('public.%I', target_table), 'TRIGGER') THEN
+      RAISE EXCEPTION 'authenticated has an unexpected table-level write/DDL grant on public.%', target_table;
+    END IF;
+
+    FOR target_column IN
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = target_table
+    LOOP
+      IF has_column_privilege('authenticated', format('public.%I', target_table), target_column, 'INSERT')
+         AND NOT (
+           (target_table = 'support_tickets' AND target_column IN ('user_id', 'subject', 'message'))
+           OR (target_table = 'quote_status_history' AND target_column IN ('quote_id', 'status', 'note', 'changed_by'))
+         ) THEN
+        RAISE EXCEPTION 'authenticated has unexpected INSERT on public.%.%', target_table, target_column;
+      END IF;
+
+      IF has_column_privilege('authenticated', format('public.%I', target_table), target_column, 'UPDATE')
+         AND NOT (
+           (target_table = 'profiles' AND target_column = 'display_name')
+           OR (target_table = 'quotes' AND target_column = 'status')
+         ) THEN
+        RAISE EXCEPTION 'authenticated has unexpected UPDATE on public.%.%', target_table, target_column;
+      END IF;
+
+      IF has_column_privilege('authenticated', format('public.%I', target_table), target_column, 'REFERENCES') THEN
+        RAISE EXCEPTION 'authenticated has unexpected REFERENCES on public.%.%', target_table, target_column;
+      END IF;
+    END LOOP;
+  END LOOP;
+
   IF NOT has_table_privilege('authenticated', 'public.profiles', 'SELECT')
      OR NOT has_column_privilege('authenticated', 'public.profiles', 'display_name', 'UPDATE')
      OR has_column_privilege('authenticated', 'public.profiles', 'is_admin', 'UPDATE')
