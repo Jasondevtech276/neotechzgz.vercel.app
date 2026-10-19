@@ -72,3 +72,5 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261018110000_atomic_admin_quote_status.sql
       - name: Run SQL privilege assertions
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/least_privilege_customer_access.sql
+      - name: Run synthetic customer/admin authorization and atomicity tests
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/least_privilege_synthetic_users.sql
