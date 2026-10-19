@@ -115,7 +115,7 @@ RESET ROLE;
 -- Trigger execution must remain effective even after direct EXECUTE is revoked
 -- from client roles. Simulate a request identity while executing as table owner.
 SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
-DO $
+DO $$
 BEGIN
   BEGIN
     UPDATE public.profiles SET deleted_at = now()
@@ -129,6 +129,6 @@ BEGIN
     WHERE id = '00000000-0000-0000-0000-00000000000a' AND deleted_at IS NOT NULL) THEN
     RAISE EXCEPTION 'Retention trigger left a client-requested deleted_at change in place';
   END IF;
-END $;
+END $$;
 
 ROLLBACK;
