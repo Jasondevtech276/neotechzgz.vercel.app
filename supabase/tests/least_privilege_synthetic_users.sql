@@ -37,11 +37,17 @@ BEGIN
     RAISE EXCEPTION 'Customer unexpectedly updated is_admin';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
+  DECLARE affected_rows integer;
   BEGIN
     UPDATE public.quotes SET status = 'cancelada' WHERE id = '10000000-0000-0000-0000-00000000000a';
-    RAISE EXCEPTION 'Customer unexpectedly updated quote status';
-  EXCEPTION WHEN insufficient_privilege THEN NULL;
+    GET DIAGNOSTICS affected_rows = ROW_COUNT;
+    IF affected_rows <> 0 THEN
+      RAISE EXCEPTION 'Customer unexpectedly updated quote status (% rows)', affected_rows;
+    END IF;
   END;
+  IF (SELECT status FROM public.quotes WHERE id = '10000000-0000-0000-0000-00000000000a') <> 'recibida' THEN
+    RAISE EXCEPTION 'Customer changed quote status despite RLS';
+  END IF;
   BEGIN
     INSERT INTO public.support_tickets (user_id, subject, message, status)
     VALUES (auth.uid(), 'Escalation', 'Denied', 'closed');
