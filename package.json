@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "ai-example": "node --experimental-default-type=module --env-file=.env.local index.ts",
-    "test": "node --test"
+    "ai-example": "node --experimental-default-type=module --env-file-if-exists=.env.local index.ts",
+    "test": "node --experimental-default-type=module --test"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
