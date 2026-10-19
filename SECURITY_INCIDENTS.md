@@ -29,7 +29,8 @@
 
 ## Revisión de trabajos abiertos (19 de octubre de 2026)
 
-- PR #50 está fusionado en `main` y contiene el diseño público acotado; su build de GitHub y los checks de Vercel Preview finalizaron correctamente. El dominio público responde con el nuevo tema. PR #48 sigue abierto sobre `design/visual-concepts-2026-10` y ya está supersedido: no debe fusionarse a `main`.
+- Actualización NT-20: la sesión responsable informó que su `.env.local` (21 bytes) se había generado sin leerlo, que los comandos se detenían ante la comprobación de clave ausente y que el archivo local ya fue eliminado. La revisión confirmó que no hay archivos `.env*` versionados ni alertas de Secret Scanning. Esto reduce el riesgo de una copia local, pero no verifica ni revoca un posible valor en el historial persistente o en la cuenta Vercel; el OAuth 401 y la falta del CLI bloquearon esa comprobación.
+- PR #50 está fusionado en `main` y contiene el diseño público acotado; su build de GitHub y los checks de Vercel Preview finalizaron correctamente. El dominio público responde con el nuevo tema. PR #48 se cerró como supersedido el 19 de octubre; no debe fusionarse a `main`.
 - PR #51 está fusionado y solo añade documentación de límites de seguridad.
 - PR #49 sigue abierto y en conflicto con `main`. Sus checks de aplicación no validan SQL; la descripción confirma que sus migraciones no se han aplicado y que faltan pruebas SQL aisladas, pruebas sintéticas de aislamiento/administración y verificación del trigger de retención. No fusionar ni aplicar a producción hasta completar esas validaciones.
 - PR #47 sigue abierto y en conflicto con `main`. Sus checks pasan, pero aún debe revisarse el callback de recuperación con la allowlist de Supabase Auth y validar el ciclo de correo en entorno autorizado.
