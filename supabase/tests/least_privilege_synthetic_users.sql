@@ -21,6 +21,8 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', true);
 
 DO $$
+DECLARE
+  affected_rows integer;
 BEGIN
   IF (SELECT count(*) FROM public.quotes) <> 1 THEN RAISE EXCEPTION 'Customer A quote isolation failed'; END IF;
   IF (SELECT count(*) FROM public.payments) <> 1 THEN RAISE EXCEPTION 'Customer A payment isolation failed'; END IF;
@@ -37,17 +39,16 @@ BEGIN
     RAISE EXCEPTION 'Customer unexpectedly updated is_admin';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
-  DECLARE affected_rows integer;
-  BEGIN
-    UPDATE public.quotes SET status = 'cancelada' WHERE id = '10000000-0000-0000-0000-00000000000a';
-    GET DIAGNOSTICS affected_rows = ROW_COUNT;
-    IF affected_rows <> 0 THEN
-      RAISE EXCEPTION 'Customer unexpectedly updated quote status (% rows)', affected_rows;
-    END IF;
-  END;
+
+  UPDATE public.quotes SET status = 'cancelada' WHERE id = '10000000-0000-0000-0000-00000000000a';
+  GET DIAGNOSTICS affected_rows = ROW_COUNT;
+  IF affected_rows <> 0 THEN
+    RAISE EXCEPTION 'Customer unexpectedly updated quote status (% rows)', affected_rows;
+  END IF;
   IF (SELECT status FROM public.quotes WHERE id = '10000000-0000-0000-0000-00000000000a') <> 'recibida' THEN
     RAISE EXCEPTION 'Customer changed quote status despite RLS';
   END IF;
+
   BEGIN
     INSERT INTO public.support_tickets (user_id, subject, message, status)
     VALUES (auth.uid(), 'Escalation', 'Denied', 'closed');
