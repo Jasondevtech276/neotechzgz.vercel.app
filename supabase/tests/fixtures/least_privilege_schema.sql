@@ -50,4 +50,13 @@ CREATE POLICY support_tickets_select_own ON public.support_tickets FOR SELECT TO
 CREATE POLICY support_tickets_insert_own ON public.support_tickets FOR INSERT TO authenticated WITH CHECK (user_id = (SELECT auth.uid()));
 
 CREATE FUNCTION public.prevent_client_deleted_at_changes() RETURNS trigger
-LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $
+BEGIN
+  IF auth.uid() IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
+    RAISE EXCEPTION 'Account deletion state can only be changed by the account deletion service';
+  END IF;
+  RETURN NEW;
+END $;
+CREATE TRIGGER profiles_protect_deleted_at
+BEFORE UPDATE OF deleted_at ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.prevent_client_deleted_at_changes();
