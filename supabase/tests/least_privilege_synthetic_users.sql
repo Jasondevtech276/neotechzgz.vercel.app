@@ -56,7 +56,7 @@ BEGIN
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
   BEGIN
-    INSERT INTO public.payments (user_id, amount, status) VALUES (auth.uid(), 999, 'paid');
+    INSERT INTO public.payments (user_id, product_id, amount_cents, status) VALUES (auth.uid(), 'forbidden', 99900, 'paid');
     RAISE EXCEPTION 'Customer unexpectedly inserted payment';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
