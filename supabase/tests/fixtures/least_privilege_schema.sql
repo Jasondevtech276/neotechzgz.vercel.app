@@ -2,6 +2,7 @@
 -- Never run this against production. GitHub Actions creates a fresh database.
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO anon, authenticated;
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
