@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const RETENTION_DAYS = 60
+const RETENTION_DAYS = 0
 const BATCH_SIZE = 10
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -116,8 +116,8 @@ export async function GET(request: Request) {
         await cancelOutstandingSubscriptions(getStripe(), subscriptionIds, customerIds)
       }
 
-      // Retry subscription cancellation every day during the 60-day grace period,
-      // but do not anonymize or remove the account until the original deadline.
+      // Do not impose an undocumented fixed grace period. Once this scheduled job
+      // verifies/cancels subscriptions successfully, continue deletion processing.
       if (deletionRequestedAt.getTime() > new Date(cutoff).getTime()) {
         pending += 1
         continue
