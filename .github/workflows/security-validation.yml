@@ -70,7 +70,11 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261017120000_least_privilege_customer_access.sql
       - name: Apply atomic quote-status migration
         run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261018110000_atomic_admin_quote_status.sql
+      - name: Apply Stripe webhook idempotency migration
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261020160000_stripe_webhook_idempotency.sql
       - name: Run SQL privilege assertions
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/least_privilege_customer_access.sql
       - name: Run synthetic customer/admin authorization and atomicity tests
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/least_privilege_synthetic_users.sql
+      - name: Run Stripe webhook idempotency and event-ordering tests
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/stripe_webhook_idempotency.sql
