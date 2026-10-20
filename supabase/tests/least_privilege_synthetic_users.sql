@@ -10,9 +10,9 @@ INSERT INTO public.profiles (id, display_name, is_admin) VALUES
 INSERT INTO public.quotes (id, user_id, status, name, budget_calculated) VALUES
  ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', 'recibida', 'A quote', 100),
  ('10000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b', 'recibida', 'B quote', 200);
-INSERT INTO public.payments (user_id, amount, status) VALUES
- ('00000000-0000-0000-0000-00000000000a', 10, 'pending'),
- ('00000000-0000-0000-0000-00000000000b', 20, 'pending');
+INSERT INTO public.payments (user_id, product_id, amount_cents, status) VALUES
+ ('00000000-0000-0000-0000-00000000000a', 'synthetic-a', 1000, 'pending'),
+ ('00000000-0000-0000-0000-00000000000b', 'synthetic-b', 2000, 'pending');
 INSERT INTO public.support_tickets (user_id, subject, message) VALUES
  ('00000000-0000-0000-0000-00000000000a', 'A ticket', 'Synthetic'),
  ('00000000-0000-0000-0000-00000000000b', 'B ticket', 'Synthetic');
