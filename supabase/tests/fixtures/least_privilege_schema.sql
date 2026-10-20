@@ -24,8 +24,16 @@ CREATE TABLE public.quote_status_history (
   status text NOT NULL, note text, changed_by uuid, created_at timestamptz DEFAULT now()
 );
 CREATE TABLE public.payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL,
-  amount numeric, status text, created_at timestamptz DEFAULT now()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid,
+  product_id text NOT NULL, status text NOT NULL,
+  amount_cents integer NOT NULL CHECK (amount_cents >= 0),
+  stripe_session_id text UNIQUE, stripe_customer_id text, stripe_subscription_id text,
+  invoice_id text, receipt_url text, subscription_status text,
+  current_period_end timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CHECK (status IN ('paid', 'pending', 'failed', 'refunded')),
+  CHECK (subscription_status IS NULL OR subscription_status IN ('active', 'trialing', 'past_due', 'canceled', 'incomplete', 'incomplete_expired', 'unpaid', 'paused'))
 );
 CREATE TABLE public.support_tickets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL,
