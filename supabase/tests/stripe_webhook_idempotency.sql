@@ -34,7 +34,7 @@ END $$;
 DO $$
 DECLARE result text;
 DECLARE payment_status text;
-DECLARE subscription_status text;
+DECLARE v_subscription_status text;
 BEGIN
   result := public.apply_stripe_payment_event(
     'checkout.session.completed', 100, '00000000-0000-0000-0000-00000000000a',
@@ -74,8 +74,8 @@ BEGIN
     NULL, NULL, NULL, NULL, 'canceled', NULL
   );
   IF result <> 'ignored' THEN RAISE EXCEPTION 'Older subscription event should be ignored, got %', result; END IF;
-  SELECT subscription_status INTO subscription_status FROM public.payments WHERE stripe_session_id = 'cs_test_ordering';
-  IF subscription_status <> 'active' THEN RAISE EXCEPTION 'Older subscription event regressed state to %', subscription_status; END IF;
+  SELECT p.subscription_status INTO v_subscription_status FROM public.payments p WHERE p.stripe_session_id = 'cs_test_ordering';
+  IF v_subscription_status <> 'active' THEN RAISE EXCEPTION 'Older subscription event regressed state to %', v_subscription_status; END IF;
 END $$;
 
 DO $$
