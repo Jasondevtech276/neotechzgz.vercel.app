@@ -56,14 +56,18 @@ jobs:
           target_version="$(psql "$RESTORE_DATABASE_URL" -XAtqc 'SHOW server_version_num')"
           echo "Source PostgreSQL major: $((source_version / 10000))"
           echo "Restore target PostgreSQL major: $((target_version / 10000))"
+          if (( source_version < 170000 || source_version >= 180000 )); then
+            echo "::error::Source must be PostgreSQL 17 for this runbook."
+            exit 1
+          fi
           if (( target_version < 170000 || target_version >= 180000 )); then
             echo "::error::Restore target must be PostgreSQL 17."
             exit 1
           fi
-          source_identity="$(psql "$SOURCE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local') || '|' || current_database()")"
-          target_identity="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local') || '|' || current_database()")"
-          if [[ "$source_identity" == "$target_identity" ]]; then
-            echo "::error::Source and restore target resolve to the same server address and database. Refusing to continue."
+          source_server="$(psql "$SOURCE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local')")"
+          target_server="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local')")"
+          if [[ "$source_server" == "$target_server" ]]; then
+            echo "::error::Source and restore target resolve to the same server address. Use a separately isolated PostgreSQL 17 instance."
             exit 1
           fi
           target_objects="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','v','m','S','f'))"
