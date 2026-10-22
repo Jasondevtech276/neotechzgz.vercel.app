@@ -90,7 +90,7 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 BEGIN
-  IF p_status NOT IN ('processed', 'failed') THEN
+  IF p_status IS NULL OR p_status NOT IN ('processed', 'failed') THEN
     RAISE EXCEPTION 'Invalid Stripe event terminal status' USING ERRCODE = '22023';
   END IF;
 
@@ -130,12 +130,12 @@ AS $$
 DECLARE
   v_id uuid;
 BEGIN
-  IF p_event_created IS NULL THEN
-    RAISE EXCEPTION 'Missing Stripe event timestamp' USING ERRCODE = '22023';
+  IF p_event_type IS NULL OR p_event_type = '' OR p_event_created IS NULL OR p_event_created < 0 THEN
+    RAISE EXCEPTION 'Invalid Stripe event identity' USING ERRCODE = '22023';
   END IF;
 
   IF p_event_type IN ('checkout.session.completed', 'checkout.session.async_payment_succeeded') THEN
-    IF p_user_id IS NULL OR p_product_id IS NULL OR p_session_id IS NULL OR p_payment_status <> 'paid' OR coalesce(p_amount_cents, -1) < 0 THEN
+    IF p_user_id IS NULL OR p_product_id IS NULL OR p_product_id = '' OR p_session_id IS NULL OR p_session_id = '' OR p_payment_status IS DISTINCT FROM 'paid' OR p_amount_cents IS NULL OR p_amount_cents < 0 THEN
       RETURN 'ignored';
     END IF;
 
@@ -181,7 +181,7 @@ BEGIN
   END IF;
 
   IF p_event_type IN ('invoice.paid', 'invoice.payment_failed') THEN
-    IF p_subscription_id IS NULL OR p_payment_status NOT IN ('paid', 'failed') THEN RETURN 'ignored'; END IF;
+    IF p_subscription_id IS NULL OR p_subscription_id = '' OR p_payment_status IS NULL OR p_payment_status NOT IN ('paid', 'failed') THEN RETURN 'ignored'; END IF;
 
     UPDATE public.payments
     SET status = p_payment_status,
