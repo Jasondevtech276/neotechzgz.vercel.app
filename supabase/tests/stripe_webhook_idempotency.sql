@@ -78,7 +78,32 @@ BEGIN
   IF v_subscription_status <> 'active' THEN RAISE EXCEPTION 'Older subscription event regressed state to %', v_subscription_status; END IF;
 END $$;
 
-DO $$
+
+DO $
+DECLARE result text;
+BEGIN
+  result := public.apply_stripe_payment_event(
+    'checkout.session.completed', 400, '00000000-0000-0000-0000-00000000000b',
+    'synthetic-null-status', 'cs_test_null_status', 'cus_test_null_status', NULL,
+    NULL, 100, NULL, NULL, NULL, NULL
+  );
+  IF result <> 'ignored' THEN RAISE EXCEPTION 'Checkout with NULL payment status must be ignored, got %', result; END IF;
+
+  result := public.apply_stripe_payment_event(
+    'invoice.payment_failed', 401, NULL, NULL, NULL, NULL, 'sub_test_ordering',
+    NULL, NULL, 'in_null_status', NULL, NULL, NULL
+  );
+  IF result <> 'ignored' THEN RAISE EXCEPTION 'Invoice with NULL payment status must be ignored, got %', result; END IF;
+
+  BEGIN
+    PERFORM public.finish_stripe_webhook_event('evt_invalid_status', NULL, NULL);
+    RAISE EXCEPTION 'NULL terminal status should have been rejected';
+  EXCEPTION WHEN SQLSTATE '22023' THEN
+    NULL;
+  END;
+END $;
+
+DO $
 BEGIN
   IF has_table_privilege('anon', 'public.stripe_webhook_events', 'SELECT') OR
      has_table_privilege('authenticated', 'public.stripe_webhook_events', 'SELECT') THEN
