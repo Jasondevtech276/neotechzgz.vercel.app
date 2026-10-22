@@ -58,6 +58,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
   }
 
+  // Destructive retention stays opt-in until a verified backup/restore checkpoint
+  // and production rollout window are explicitly completed.
+  if (process.env.ACCOUNT_PURGE_ENABLED !== 'true') {
+    return NextResponse.json(
+      { error: 'Account purge is disabled pending production preflight' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
+    )
+  }
+
   if (!(process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SECRET_KEY ?? process.env.SERVICE_ROLE)) {
     console.error('[account-retention] Supabase admin environment is not configured')
     return NextResponse.json({ error: 'Cron is not configured' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
