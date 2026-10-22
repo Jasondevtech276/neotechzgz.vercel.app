@@ -18,12 +18,12 @@ permissions:
   actions: write
 
 concurrency:
-  group: pg17-backup-restore-\${{ github.ref }}
+  group: pg17-backup-restore-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   backup-and-restore:
-    if: \${{ github.event.inputs.confirm_restore_target == 'RESTORE_TO_ISOLATED_PG17' }}
+    if: ${{ github.event.inputs.confirm_restore_target == 'RESTORE_TO_ISOLATED_PG17' }}
     runs-on: ubuntu-latest
     container:
       image: postgres:17-bookworm
@@ -31,10 +31,10 @@ jobs:
     env:
       PGCONNECT_TIMEOUT: "10"
       PGSSLMODE: require
-      SOURCE_DATABASE_URL: \${{ secrets.SUPABASE_SOURCE_DB_URL }}
-      RESTORE_DATABASE_URL: \${{ secrets.PG17_ISOLATED_RESTORE_DB_URL }}
-      AGE_RECIPIENT: \${{ vars.BACKUP_AGE_RECIPIENT }}
-      AGE_IDENTITY: \${{ secrets.BACKUP_AGE_IDENTITY }}
+      SOURCE_DATABASE_URL: ${{ secrets.SUPABASE_SOURCE_DB_URL }}
+      RESTORE_DATABASE_URL: ${{ secrets.PG17_ISOLATED_RESTORE_DB_URL }}
+      AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      AGE_IDENTITY: ${{ secrets.BACKUP_AGE_IDENTITY }}
     steps:
       - name: Install age encryption utility
         run: |
@@ -95,10 +95,10 @@ jobs:
           rm -f /tmp/neotech-pg17.restore.dump
 
       - name: Upload encrypted backup only
-        if: \${{ inputs.upload_encrypted_backup }}
+        if: ${{ inputs.upload_encrypted_backup }}
         uses: actions/upload-artifact@v4
         with:
-          name: neotech-pg17-encrypted-backup-\${{ github.run_id }}
+          name: neotech-pg17-encrypted-backup-${{ github.run_id }}
           path: |
             /tmp/neotech-pg17.dump.age
             /tmp/neotech-pg17.dump.age.sha256
