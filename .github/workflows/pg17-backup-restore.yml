@@ -15,7 +15,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 concurrency:
   group: pg17-backup-restore-${{ github.ref }}
@@ -58,10 +57,18 @@ jobs:
             echo "::error::Restore target must be PostgreSQL 17."
             exit 1
           fi
-          if [[ "$SOURCE_DATABASE_URL" == "$RESTORE_DATABASE_URL" ]]; then
-            echo "::error::Source and restore target URLs must not be identical."
+          source_identity="$(psql "$SOURCE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local') || '|' || current_database()")"
+          target_identity="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local') || '|' || current_database()")"
+          if [[ "$source_identity" == "$target_identity" ]]; then
+            echo "::error::Source and restore target resolve to the same server address and database. Refusing to continue."
             exit 1
           fi
+          target_objects="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','v','m','S','f'))"
+          if [[ "$target_objects" != "0" ]]; then
+            echo "::error::Restore target is not empty ($target_objects user objects found). Use a new disposable database."
+            exit 1
+          fi
+          echo "Source and target identities differ; target contains no user tables/views/sequences."
 
       - name: Create custom-format dump and encrypt it before retention
         shell: bash
@@ -84,7 +91,7 @@ jobs:
           printf '%s\n' "$AGE_IDENTITY" > /tmp/backup-identity.txt
           age --decrypt --identity /tmp/backup-identity.txt --output /tmp/neotech-pg17.restore.dump /tmp/neotech-pg17.dump.age
           rm -f /tmp/backup-identity.txt
-          pg_restore --clean --if-exists --no-owner --no-acl --exit-on-error --verbose --dbname="$RESTORE_DATABASE_URL" /tmp/neotech-pg17.restore.dump
+          pg_restore --no-owner --no-acl --exit-on-error --verbose --dbname="$RESTORE_DATABASE_URL" /tmp/neotech-pg17.restore.dump
           restored_version="$(psql "$RESTORE_DATABASE_URL" -XAtqc 'SHOW server_version_num')"
           test "$((restored_version / 10000))" -eq 17
           schema_count="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT count(*) FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'")"
