@@ -37,12 +37,12 @@ jobs:
         run: npm run build
 
   database-migration-test:
-    name: Validate least-privilege migrations on disposable PostgreSQL
+    name: Validate migrations on disposable PostgreSQL 17
     runs-on: ubuntu-latest
     timeout-minutes: 10
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: neotech_test
