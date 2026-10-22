@@ -5,7 +5,7 @@
 - Supabase organization plan: **Free**.
 - Production database: PostgreSQL 17.11; project ref `qkzmpxyefuqdhyxwfjcw`.
 - Production migration history currently ends at `20261016130248`; the PR's least-privilege, atomic quote-status, and Stripe event-ledger migrations are not applied.
-- The PR's automated database suite runs against disposable PostgreSQL 16. This is useful CI coverage, but it is not a PostgreSQL 17 production-clone restore drill.
+- The PR's automated database suite now runs against disposable PostgreSQL 17 in GitHub Actions, matching the production major version. This is useful migration/test coverage, but it is not a restored copy of production and does not prove the backup is recoverable.
 - No paid Supabase branch is required or permitted for this procedure.
 - The account-purge endpoint now requires `ACCOUNT_PURGE_ENABLED=true` in addition to the existing cron authorization secret. Leave it unset/false until the recovery checkpoint and rollout are verified.
 
@@ -25,9 +25,9 @@ References:
    - `20261017120000_least_privilege_customer_access.sql`
    - `20261018110000_atomic_admin_quote_status.sql`
    - `20261020160000_stripe_webhook_idempotency.sql`
-3. Use the Supabase CLI help for the installed version (`supabase db dump --help`) and create a logical export using the documented procedure for the linked project. Do not put database URLs, access tokens, service-role keys, or exported customer data in GitHub, Vercel variables, or build logs.
+3. From an authorized operator workstation with the Supabase CLI and database access, check `supabase db dump --help` for the installed CLI version, then create a logical export using the documented procedure for the linked project. Keep connection strings and tokens in the local environment/secret manager; never put database URLs, access tokens, service-role keys, or exported customer data in GitHub, Vercel variables, or build logs. This ChatGPT-connected session cannot run the Supabase CLI or retrieve a full database dump, so the export has NOT been created by this run.
 4. Store the export encrypted and off-site, with access restricted to the project owner. Export Storage objects separately if used; a database dump does not include file contents in Storage.
-5. Restore the export into an isolated local PostgreSQL 17 environment. Never restore over production for a test. Record the restore result and verify table counts/schema without publishing customer data.
+5. Restore the export into an isolated local PostgreSQL 17 environment (for example, a local Docker container with no public port). Never restore over production for a test. Record the restore result and verify table counts/schema without publishing customer data. Do not call recovery complete until `pg_restore`/`psql` exits successfully and representative schema/data checks pass.
 6. Take a read-only snapshot of the current grants, policies, constraints, triggers, and public functions for the five affected tables. Preserve it outside the repository as the rollback reference.
 7. Confirm the Vercel Preview environment uses a non-production Supabase project and Stripe test-mode credentials before sending any test events. If the preview is connected to production, do not send Stripe test events to it.
 8. Verify required secrets exist by name only; never print values. Do not rotate or change secrets during this procedure.
