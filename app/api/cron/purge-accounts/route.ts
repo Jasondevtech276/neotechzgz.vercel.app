@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
 import { timingSafeEqual } from 'node:crypto'
+import { isAccountPurgeEnabled } from '@/lib/account-retention.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
 
   // Destructive retention stays opt-in until a verified backup/restore checkpoint
   // and production rollout window are explicitly completed.
-  if (process.env.ACCOUNT_PURGE_ENABLED !== 'true') {
+  if (!isAccountPurgeEnabled(process.env.ACCOUNT_PURGE_ENABLED)) {
     return NextResponse.json(
       { error: 'Account purge is disabled pending production preflight' },
       { status: 503, headers: { 'Cache-Control': 'no-store' } },
