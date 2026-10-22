@@ -36,7 +36,7 @@ The live Supabase project was inspected using catalog/privilege queries and Secu
 - The application job passed dependency installation, high/critical npm audit, automated tests, and production build.
 - The disposable PostgreSQL 16 job passed fixture creation, both proposed migrations, structural privilege assertions, and synthetic customer A/customer B/admin authorization and atomicity tests.
 - These results prove the migrations execute against the CI fixture and the tested behaviors pass there. They do **not** prove every production-specific policy, grant, function, trigger, or workflow has been exercised against an exact production clone.
-- The PR remains open and in draft. No production migration, merge, or production deployment has been performed. No paid Supabase development branch was created.
+- The PR remains open and ready for review, but unmerged. No production migration, merge, or production deployment has been performed. No paid Supabase development branch was created.
 - Before production, review the complete migration diff against live catalog results, verify all application call paths and status values, take/confirm a current backup/PITR recovery point, and prepare a tested rollback plan. Do not treat the passing CI fixture as a production restore drill.
 
 ## Remote assistance is intentionally disabled
@@ -56,6 +56,7 @@ Before implementing customer remote support, require all of:
 - Before merge, validate migration syntax/order in a disposable database; run `supabase/tests/least_privilege_customer_access.sql` and `supabase/tests/least_privilege_synthetic_users.sql`; test own-row isolation, profile display-name updates, ticket creation, admin quote status/history, and admin payment/ticket reads. Current CI has passed these checks against its disposable PostgreSQL fixture.
 - Inventory existing public functions and sequences separately: default-privilege changes only affect future objects. Verify the retention trigger still blocks client-driven `deleted_at` changes after direct EXECUTE is revoked.
 - Use synthetic customer A, customer B, and admin accounts. Confirm cross-user reads fail, customer quote/payment/history writes fail, and customers cannot set ticket status/timestamps.
-- Before production, verify a current backup/PITR recovery point and a documented rollback plan; test restoration separately. Do not use a restore operation as a casual rollback.
+- The Supabase organization is on the Free plan, which does not include automatic daily backups or PITR. Before production, create an encrypted logical export off-site and verify a restore in an isolated PostgreSQL 17 environment; document rollback. Do not use a restore operation as a casual rollback.
+- The account-purge cron is opt-in: it returns 503 unless `ACCOUNT_PURGE_ENABLED=true` is set in addition to the cron secret. Keep it disabled until backup/restore, retention policy, and rollout preflight are explicitly verified. See `docs/security/pr-49-production-rollout.md`.
 - Do not merge or apply if any required customer workflow fails. Rollback must restore only the minimum privileges demonstrated to be required; do not broadly regrant CRUD to `anon` or `authenticated`.
 - This document and the proposed migration do not constitute a security certification or legal opinion.
