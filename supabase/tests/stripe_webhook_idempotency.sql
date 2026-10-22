@@ -3,7 +3,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
-DO $$$
+DO $$
 DECLARE result text;
 BEGIN
   result := public.claim_stripe_webhook_event('evt_test_duplicate', 'invoice.paid', 100);
@@ -31,7 +31,7 @@ BEGIN
   PERFORM public.finish_stripe_webhook_event('evt_test_stale', 'processed', NULL);
 END $$;
 
-DO $$$
+DO $$
 DECLARE result text;
 DECLARE payment_status text;
 DECLARE v_subscription_status text;
