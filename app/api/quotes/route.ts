@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/emailjs'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { isAccountDeletionPending } from '@/lib/account-status.mjs'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const serviceRates: Record<string, number> = {
@@ -68,9 +69,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'La solicitud supera el tamaño permitido' }, { status: 400 })
     }
 
-    const { data: { user } } = await createServerClient().then(client => client.auth.getUser())
+    const sessionClient = await createServerClient()
+    const { data: { user } } = await sessionClient.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Inicia sesión para solicitar un presupuesto' }, { status: 401 })
     if (user.email?.toLowerCase() !== email) return NextResponse.json({ error: 'Usa el email de tu cuenta para crear la solicitud' }, { status: 403 })
+
+    // Quote insertion uses a privileged server-side client, so do not rely on RLS
+    // alone to stop an account whose deletion has already been requested.
+    const { data: profile, error: profileError } = await sessionClient
+      .from('profiles')
+      .select('deleted_at')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (profileError || !profile) {
+      console.error('[quotes] Failed to verify account status')
+      return NextResponse.json({ error: 'No se pudo comprobar el estado de la cuenta' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+    }
+    if (isAccountDeletionPending(profile)) {
+      return NextResponse.json({ error: 'La cuenta está pendiente de eliminación y no puede crear nuevas solicitudes' }, { status: 403, headers: { 'Cache-Control': 'no-store' } })
+    }
     const { data, error } = await getServerClient()
       .from('quotes')
       .insert({ name, email, company, service, hours, description, budget_calculated: budget, user_id: user.id })

@@ -1,0 +1,80 @@
+name: Security validation
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, security/least-privilege-access-controls]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-validation:
+    name: Dependencies, tests, and production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Audit high and critical dependency vulnerabilities
+        run: npm audit --audit-level=high
+      - name: Run automated tests
+        run: npm test
+      - name: Build production application
+        run: npm run build
+
+  database-migration-test:
+    name: Validate migrations on disposable PostgreSQL 17
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: neotech_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d neotech_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: neotech_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Create disposable schema fixture
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fixtures/least_privilege_schema.sql
+      - name: Apply least-privilege migration
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261017120000_least_privilege_customer_access.sql
+      - name: Apply atomic quote-status migration
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261018110000_atomic_admin_quote_status.sql
+      - name: Apply Stripe webhook idempotency migration
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261020160000_stripe_webhook_idempotency.sql
+      - name: Run SQL privilege assertions
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/least_privilege_customer_access.sql
+      - name: Run synthetic customer/admin authorization and atomicity tests
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/least_privilege_synthetic_users.sql
+      - name: Run Stripe webhook idempotency and event-ordering tests
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/stripe_webhook_idempotency.sql

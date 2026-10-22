@@ -3,12 +3,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getStripe } from '@/lib/stripe'
 import type Stripe from 'stripe'
 import { timingSafeEqual } from 'node:crypto'
+import { isAccountPurgeEnabled } from '@/lib/account-retention.mjs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const RETENTION_DAYS = 60
+const RETENTION_DAYS = 0
 const BATCH_SIZE = 10
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -56,6 +57,15 @@ export async function GET(request: Request) {
   }
   if (!isAuthorized(request, expectedSecret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
+  }
+
+  // Destructive retention stays opt-in until a verified backup/restore checkpoint
+  // and production rollout window are explicitly completed.
+  if (!isAccountPurgeEnabled(process.env.ACCOUNT_PURGE_ENABLED)) {
+    return NextResponse.json(
+      { error: 'Account purge is disabled pending production preflight' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
+    )
   }
 
   if (!(process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SECRET_KEY ?? process.env.SERVICE_ROLE)) {
@@ -116,8 +126,8 @@ export async function GET(request: Request) {
         await cancelOutstandingSubscriptions(getStripe(), subscriptionIds, customerIds)
       }
 
-      // Retry subscription cancellation every day during the 60-day grace period,
-      // but do not anonymize or remove the account until the original deadline.
+      // Do not impose an undocumented fixed grace period. Once this scheduled job
+      // verifies/cancels subscriptions successfully, continue deletion processing.
       if (deletionRequestedAt.getTime() > new Date(cutoff).getTime()) {
         pending += 1
         continue
