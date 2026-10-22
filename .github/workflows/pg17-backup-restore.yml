@@ -1,6 +1,9 @@
 name: PostgreSQL 17 encrypted backup and isolated restore verification
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/pg17-backup-restore.yml"
   workflow_dispatch:
     inputs:
       confirm_restore_target:
@@ -22,7 +25,7 @@ concurrency:
 
 jobs:
   backup-and-restore:
-    if: ${{ github.event.inputs.confirm_restore_target == 'RESTORE_TO_ISOLATED_PG17' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_restore_target == 'RESTORE_TO_ISOLATED_PG17' }}
     runs-on: ubuntu-latest
     container:
       image: postgres:17-bookworm
