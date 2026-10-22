@@ -3,7 +3,7 @@
 \set ON_ERROR_STOP on
 BEGIN;
 
-DO $$
+DO $$$
 DECLARE result text;
 BEGIN
   result := public.claim_stripe_webhook_event('evt_test_duplicate', 'invoice.paid', 100);
@@ -31,7 +31,7 @@ BEGIN
   PERFORM public.finish_stripe_webhook_event('evt_test_stale', 'processed', NULL);
 END $$;
 
-DO $$
+DO $$$
 DECLARE result text;
 DECLARE payment_status text;
 DECLARE v_subscription_status text;
@@ -79,7 +79,7 @@ BEGIN
 END $$;
 
 
-DO $
+DO $$
 DECLARE result text;
 BEGIN
   result := public.apply_stripe_payment_event(
@@ -101,9 +101,9 @@ BEGIN
   EXCEPTION WHEN SQLSTATE '22023' THEN
     NULL;
   END;
-END $;
+END $$;
 
-DO $
+DO $$
 BEGIN
   IF has_table_privilege('anon', 'public.stripe_webhook_events', 'SELECT') OR
      has_table_privilege('authenticated', 'public.stripe_webhook_events', 'SELECT') THEN
