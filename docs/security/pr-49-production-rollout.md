@@ -77,3 +77,56 @@ Do not begin this section until the preflight and restore test are complete and 
 - [ ] Account-purge activation explicitly reviewed; remain disabled by default until then.
 
 This runbook is operational guidance, not a guarantee of recovery or a legal certification.
+
+
+## Operator command template — encrypted export and restore
+
+Run this only on an authorized workstation with Docker, Supabase CLI, age, and PostgreSQL client tools installed. Prefer WSL2 on Windows. This connected session cannot access a local shell or obtain the database password, so these commands must be run locally; do not send credentials or dumps back into chat.
+
+1. Set `SUPABASE_DB_URL` from the Dashboard Connect panel and `AGE_RECIPIENT` to the public age recipient in the local shell. Do not use `set -x` or print the environment.
+
+```sh
+set -euo pipefail
+umask 077
+: "${SUPABASE_DB_URL:?Set this locally; never echo it}"
+: "${AGE_RECIPIENT:?Set the public age recipient}"
+OUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/neotech-backup.XXXXXX")"
+chmod 700 "$OUT_DIR"
+printf 'Restricted temporary directory created.\n'
+supabase db dump --db-url "$SUPABASE_DB_URL" -f "$OUT_DIR/roles.sql" --role-only
+supabase db dump --db-url "$SUPABASE_DB_URL" -f "$OUT_DIR/schema.sql"
+supabase db dump --db-url "$SUPABASE_DB_URL" -f "$OUT_DIR/data.sql" --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+test -s "$OUT_DIR/roles.sql" && test -s "$OUT_DIR/schema.sql" && test -s "$OUT_DIR/data.sql"
+ARCHIVE="$OUT_DIR/neotech-supabase-$(date -u +%Y%m%dT%H%M%SZ).tar.age"
+tar -C "$OUT_DIR" -cf - roles.sql schema.sql data.sql | age -r "$AGE_RECIPIENT" -o "$ARCHIVE"
+test -s "$ARCHIVE"
+sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+stat -c 'encrypted_archive_bytes=%s' "$ARCHIVE"
+printf 'Encrypted archive: %s\nChecksum file: %s\n' "$ARCHIVE" "$ARCHIVE.sha256"
+```
+
+2. Copy only the `.tar.age` archive and its `.sha256` sidecar to restricted off-site storage. Verify the copied archive with `sha256sum -c <archive>.sha256`. Keep the private age identity separate. Do not commit either file.
+
+3. Restore only to an isolated Supabase-compatible local stack whose database reports PostgreSQL 17.11-compatible version. Do not use production as the target. After copying the encrypted archive to the restore workstation:
+
+```sh
+set -euo pipefail
+umask 077
+: "${AGE_IDENTITY_FILE:?Path to the private age identity, kept outside the repo}"
+: "${RESTORE_DB_URL:?Local isolated restore target only}"
+: "${ENCRYPTED_ARCHIVE:?Path to copied .tar.age file}"
+sha256sum -c "$ENCRYPTED_ARCHIVE.sha256"
+RESTORE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/neotech-restore.XXXXXX")"
+chmod 700 "$RESTORE_DIR"
+age -d -i "$AGE_IDENTITY_FILE" "$ENCRYPTED_ARCHIVE" | tar -C "$RESTORE_DIR" -xf -
+psql "$RESTORE_DB_URL" -X -v ON_ERROR_STOP=1 -Atc 'select version();'
+# Confirm the result above is the isolated PostgreSQL 17 target before continuing.
+psql "$RESTORE_DB_URL" --single-transaction -v ON_ERROR_STOP=1 \
+  -f "$RESTORE_DIR/roles.sql" \
+  -f "$RESTORE_DIR/schema.sql" \
+  -c 'SET session_replication_role = replica' \
+  -f "$RESTORE_DIR/data.sql"
+```
+
+The restore command above is a template for a compatible self-hosted Supabase/PostgreSQL 17 environment; role/ownership and extension differences can cause restore errors. If it fails, stop and investigate rather than skipping statements. Verify schemas, extensions, RLS policies, functions, triggers, constraints, and representative row counts; then apply the three PR migrations and run all SQL tests. Record sanitized exit status, versions, archive size/hash, and results only. A database dump does not include Storage object file contents; back up those separately if the project uses Storage.
+
