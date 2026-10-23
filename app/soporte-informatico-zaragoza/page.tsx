@@ -76,7 +76,7 @@ export default function SoporteInformaticoZaragozaPage() {
         <section aria-labelledby="casos-soporte" style={{ marginTop: 42 }}>
           <p className="eyebrow">En qué podemos ayudarte</p>
           <h2 id="casos-soporte">Incidencias y tareas habituales</h2>
-          <ul className="service-detail-list">
+          <ul className="service-detail-list" style={{ display: 'grid', gap: 10, listStyleType: 'disc', paddingLeft: '1.4rem', color: 'var(--muted)', lineHeight: 1.7 }}>
             <li>Diagnóstico de problemas de equipos, software y conectividad.</li>
             <li>Configuración de ordenadores, aplicaciones, impresoras y periféricos.</li>
             <li>Revisión de actualizaciones, rendimiento y mantenimiento preventivo.</li>
