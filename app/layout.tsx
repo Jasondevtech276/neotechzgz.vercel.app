@@ -26,12 +26,10 @@ export const metadata: Metadata = {
   title: 'NeoTech ZGZ | Soporte IT y desarrollo web en Zaragoza',
   description: 'Soporte informático, desarrollo web y consultoría para autónomos y negocios. Servicios remotos y asistencia presencial en Zaragoza, con alcance claro.',
   keywords: ['soporte informático Zaragoza', 'mantenimiento informático', 'desarrollo web Zaragoza', 'consultoría IT', 'asistencia informática'],
-  alternates: { canonical: '/' },
   robots: { index: true, follow: true },
   openGraph: {
     title: 'NeoTech ZGZ | Soporte IT y desarrollo web en Zaragoza',
     description: 'Soporte informático, desarrollo web y consultoría con alcance claro y soluciones mantenibles.',
-    url: siteUrl,
     siteName: 'NeoTech ZGZ',
     locale: 'es_ES',
     type: 'website',
