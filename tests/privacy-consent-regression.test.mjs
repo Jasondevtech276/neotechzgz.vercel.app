@@ -15,6 +15,8 @@ test('third-party fonts are not fetched before consent', () => {
 
 test('analytics and advertising scripts are consent-gated', () => {
   const analytics = readFileSync(new URL('../components/consented-analytics.tsx', import.meta.url), 'utf8')
-  assert.match(analytics, /if \(analyticsEnabled\)/)
-  assert.match(analytics, /if \(marketingEnabled\)/)
+  assert.match(analytics, /analyticsEnabled = consent === 'all' \|\| consent === 'analytics'/)
+  assert.match(analytics, /marketingEnabled = consent === 'all' \|\| consent === 'marketing'/)
+  assert.match(analytics, /if \(analyticsEnabled && !document\.querySelector/)
+  assert.match(analytics, /if \(marketingEnabled && !document\.querySelector/)
 })
