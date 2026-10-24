@@ -21,22 +21,46 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient()
+  let claimed = false
   try {
-    // Atomic claim by Stripe event.id. Failed/stale claims can be retried; processed events are immutable.
-    const claim = await admin.rpc('claim_stripe_webhook_event', {
-      p_event_id: event.id,
-      p_event_type: event.type,
-      p_livemode: event.livemode,
-    })
-    if (claim.error) throw new Error('Stripe event claim failed')
-    if (claim.data !== true) {
-      const existing = await admin.from('stripe_webhook_events').select('status').eq('event_id', event.id).maybeSingle()
-      if (existing.error) throw new Error('Stripe event status lookup failed')
-      if (existing.data?.status === 'processed') {
+    const inserted = await admin.from('stripe_webhook_events').insert({
+      event_id: event.id,
+      event_type: event.type,
+      livemode: event.livemode,
+      status: 'processing',
+      attempts: 1,
+      updated_at: new Date().toISOString(),
+    }).select('event_id')
+
+    if (!inserted.error && inserted.data?.length) {
+      claimed = true
+    } else if (inserted.error?.code === '23505') {
+      const existing = await admin.from('stripe_webhook_events')
+        .select('status,attempts,updated_at')
+        .eq('event_id', event.id)
+        .maybeSingle()
+      if (existing.error || !existing.data) throw new Error('Stripe event ledger lookup failed')
+      if (existing.data.status === 'processed') {
         return NextResponse.json({ received: true, duplicate: true }, { headers: { 'Cache-Control': 'no-store' } })
       }
-      // A concurrent or stale processing attempt must be retried by Stripe, not acknowledged as complete.
-      return NextResponse.json({ error: 'Evento en procesamiento; Stripe debe reintentarlo' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+
+      const now = new Date().toISOString()
+      const retryable = existing.data.status === 'failed'
+      const staleCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      if (retryable) {
+        const reclaimed = await admin.from('stripe_webhook_events')
+          .update({ status: 'processing', attempts: Number(existing.data.attempts) + 1, updated_at: now, last_error: null })
+          .eq('event_id', event.id).eq('status', 'failed').select('event_id')
+        claimed = !reclaimed.error && Boolean(reclaimed.data?.length)
+      } else if (existing.data.status === 'processing' && existing.data.updated_at < staleCutoff) {
+        const reclaimed = await admin.from('stripe_webhook_events')
+          .update({ status: 'processing', attempts: Number(existing.data.attempts) + 1, updated_at: now, last_error: null })
+          .eq('event_id', event.id).eq('status', 'processing').lt('updated_at', staleCutoff).select('event_id')
+        claimed = !reclaimed.error && Boolean(reclaimed.data?.length)
+      }
+      if (!claimed) return NextResponse.json({ error: 'Evento en procesamiento; Stripe debe reintentarlo' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+    } else {
+      throw new Error('Stripe event claim failed')
     }
 
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
@@ -85,12 +109,14 @@ export async function POST(request: Request) {
 
     const completed = await admin.from('stripe_webhook_events')
       .update({ status: 'processed', processed_at: new Date().toISOString(), updated_at: new Date().toISOString(), last_error: null })
-      .eq('event_id', event.id).select('event_id')
+      .eq('event_id', event.id).eq('status', 'processing').select('event_id')
     if (completed.error || !completed.data?.length) throw new Error('Stripe event completion persistence failed')
   } catch (error) {
-    await admin.from('stripe_webhook_events')
-      .update({ status: 'failed', updated_at: new Date().toISOString(), last_error: error instanceof Error ? error.name : 'UnknownError' })
-      .eq('event_id', event.id)
+    if (claimed) {
+      await admin.from('stripe_webhook_events')
+        .update({ status: 'failed', updated_at: new Date().toISOString(), last_error: error instanceof Error ? error.name : 'UnknownError' })
+        .eq('event_id', event.id).eq('status', 'processing')
+    }
     console.error('[stripe-webhook] Persistence failed', { eventType: event.type, errorName: error instanceof Error ? error.name : 'UnknownError' })
     return NextResponse.json({ error: 'No se pudo sincronizar el evento' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
