@@ -12,10 +12,10 @@ export default function LegalPage() {
           <p><strong>Nombre comercial:</strong> NeoTech ZGZ.<br />
             <strong>Titular y responsable:</strong> Mohammed Jassem Larbi, persona física.<br />
             <strong>NIF/NIE:</strong> X3091974S.<br />
-            <strong>Domicilio profesional declarado:</strong> Calle Mundir I 5 3A, 50001 Zaragoza, Aragón, España.<br />
+            <strong>Domicilio de contacto publicado:</strong> Calle Mundir I, Zaragoza, Aragón, España.<br />
             <strong>Correo de contacto y privacidad:</strong> <a href="mailto:larbimhed260796@gmail.com">larbimhed260796@gmail.com</a>.<br />
             <strong>Actividad:</strong> soporte informático presencial y remoto, desarrollo web y servicios tecnológicos.<br /><br />
-            El domicilio se reproduce conforme a los datos facilitados por el titular. La forma postal exacta (por ejemplo, indicación de planta/puerta si procede) y la situación censal/fiscal deben verificarse antes de publicar definitivamente. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
+            El domicilio se reproduce conforme a los datos facilitados por el titular. La suficiencia legal del domicilio de contacto publicado y la situación censal/fiscal deben verificarse antes de publicar definitivamente. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
           </p>
         </section>
 
@@ -90,7 +90,7 @@ export default function LegalPage() {
           <p>Esta información puede actualizarse por cambios legales, técnicos o de servicios. Se publicará la versión vigente con su fecha de revisión. Si un cambio exige consentimiento nuevo o información individual, se actuará de acuerdo con la normativa aplicable.</p>
         </section>
       </div>
-      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la forma postal exacta del domicilio, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies y los flujos de contratación. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
+      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la suficiencia legal del domicilio de contacto publicado, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies y los flujos de contratación. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
       <p><a href="/" className="button button-primary">Volver a la web</a></p>
     </main>
   );
