@@ -1,43 +1,51 @@
-# NeoTech ZGZ — security audit checkpoint (2026-10-24)
+# NeoTech ZGZ — security audit and release gate (2026-10-24)
 
 ## Scope and evidence
 
-Read-only inspection of GitHub `main`, the connected Vercel project `neotechzgz`, the canonical Supabase project `qkzmpxyefuqdhyxwfjcw`, the linked legacy Supabase project `hdpikaqxeadqmckmmjfh`, and the live Stripe account metadata. No production database, Stripe, environment-variable, DNS, or deployment changes were made as part of this audit checkpoint.
+Reviewed the canonical GitHub repository, Vercel project `neotechzgz`, canonical Supabase project `qkzmpxyefuqdhyxwfjcw`, available metadata for the legacy Supabase project, and the connected Stripe account. Secret values were not intentionally displayed or copied into repository files. The production database least-privilege migration has since been applied; the live Stripe endpoints and production secrets have not been rotated or disabled in this workstream.
 
-## Verified state
+## Verified completed changes
 
-- GitHub default branch is `main`; current head at audit time: `87e9a566c108e3199701b094564576540cf7e341`.
-- Vercel production deployment for that commit is `READY`; the canonical `neotechzgz.vercel.app` alias currently maps to that deployment.
-- The canonical Supabase project has five public application tables with RLS enabled.
-- The existing policy set has own-row policies for profiles, payments, and support tickets; admin-only policies for quote management; however, `quotes` lacked a user-own-row SELECT policy even though `app/api/account/route.ts` queries a user's quotes using the authenticated client.
-- `app/api/admin/overview/route.ts` reads all payments and support tickets through the authenticated client, but the current policy set lacked explicit administrator SELECT policies for those tables.
-- The authenticated and anonymous roles have broad table-level DML grants on the five public tables. RLS currently restricts row access, but the grants exceed the operations the application needs. A proposed migration removes broad grants and re-grants only required operations.
-- The alternate Supabase project `hdpikaqxeadqmckmmjfh` has `public.quotes` with RLS enabled and no policies returned by the policy catalog query. Do not change it until its relationship to the alternate Vercel project and intended access model is confirmed.
-- Vercel environment metadata includes production variables whose names have a `NEXT_PUBLIC_` prefix while suggesting database passwords/JWT signing material, plus duplicate Supabase variable names. This audit did not read or reveal secret values and did not establish that those values were embedded in the current browser bundle. Treat this as a critical configuration finding: verify references, remove unsafe public aliases, rotate any actual secret exposed to clients, and redeploy.
-- Stripe live mode has three enabled webhook endpoints: two target the same Vercel webhook URL and one targets a Supabase Edge Function. Do not disable either endpoint until the Edge Function, delivery history, idempotency, and authoritative event processor are reviewed.
-- Supabase Auth security advisor reports leaked-password protection disabled on the canonical project. The existing project roadmap says this feature requires a paid plan; this audit did not change the plan or bypass the restriction.
-- The legal page itself says certain titular/business-registration and postal-address details require verification. Analytics/ad-tech providers and cookie-consent behavior also need to be compared with actual production configuration before legal compliance can be attested.
+- Canonical Supabase migration version `20261024133121`, name `least_privilege_public_tables_20261024150000`, is recorded as applied.
+- Post-migration catalog checks confirmed no direct table privileges for `anon` on the five reviewed application tables, narrowed `authenticated` grants, and the expected own-quote/admin-read RLS policies.
+- The account-retention cron schedule remains `0 3 * * *`; its code still requires `CRON_SECRET` and fails closed when the secret is missing or invalid.
+- The Cloudflare zone for `neotechzgz.eu.org` was removed. Registrar-side EU.org delegation is outside the available Cloudflare control surface and remains unverified.
+- The isolated dependency workspace used `npm ci`, `npm audit --audit-level=high` (0 advisories), `npm test` (11 passing), and `npm run build` (success) after pinning Next.js to `16.4.3`, overriding DOMPurify to `3.4.17`, and simplifying the test script to `node --test`.
+- GitHub Actions Security build gate succeeded for branch commit `27d693d613ee16e45d2bf2d9f515d472af8d00dd`. This is a branch/preview validation, not evidence of production deployment.
 
-## Proposed canonical-database migration
+## Least-privilege database migration
 
-`supabase/migrations/20261024150000_least_privilege_public_tables.sql`:
+File: `supabase/migrations/20261024133121_least_privilege_public_tables_20261024150000.sql`.
 
-1. Removes direct table-level privileges from `anon` and `authenticated` on the five application tables.
-2. Re-grants authenticated SELECT and only the necessary profile display-name update, quote status update, support-ticket insert, and quote-history insert permissions.
-3. Adds own-quote SELECT and administrator SELECT policies for payments and support tickets, matching the existing account/admin API access patterns.
-4. Revokes default table/sequence privileges for future application objects created by `postgres` in `public`, so client access is opt-in.
+The migration removes broad direct grants for `anon` and `authenticated` on `profiles`, `payments`, `quotes`, `quote_status_history`, and `support_tickets`; restores only intended authenticated operations; adds own-quote SELECT and administrator-only SELECT policies for payments/tickets; and revokes default client privileges on future tables/sequences created by `postgres` in `public`. The migration is applied to the canonical project. Do not apply it to the alternate Supabase project without confirming that project's purpose and access model.
 
-This migration is staged for review only; it has not been applied to production. It must pass a transaction-based SQL verification and application tests before rollout. No change is proposed for the alternate Supabase project until its intended use is confirmed.
+## Outstanding critical issues
 
-## Six previously authorized workstreams
+### Secrets / Vercel
 
-1. Supabase Auth: **partial / pending** — advisor warning remains; other Auth settings and end-to-end flows not fully rechecked.
-2. Secret review/rotation: **pending** — unsafe-looking public variable names and duplicate configuration require dependency mapping, rotation sequencing, and a successful redeploy.
-3. Stripe webhooks: **pending** — three live endpoints are enabled; duplicates/overlap are not yet resolved.
-4. Protect `main`: **reported complete in the prior roadmap, but not independently re-verified** — GitHub integration returned 403 for branch-protection inspection.
-5. End-to-end tests in Stripe test mode: **pending** — no test-mode payment flow was run in this audit.
-6. DNS/deployment: **partially verified** — canonical alias currently maps to the latest READY production deployment; alternate domain/delegation and full route validation remain outstanding.
+- Vercel metadata flags these encrypted variables as `readable-secret`: `CRON_SECRET`, `EMAILJS_PRIVATE_KEY`, `STRIPE_MCP_KEY`, `STRIPE_SECRET_KEY`, `VERCEL_AI_GATEWAY_KEY`, `REDIS_URL`, `KV_URL`, `KV_REST_API_TOKEN`, `KV_REST_API_READ_ONLY_TOKEN`, `SUPABASE_SECRET_KEY_2`, `SUPABASE_SECRET_KEY`, and `SERVICE_ROLE`.
+- Several production variable names with the `NEXT_PUBLIC_` prefix suggest server-only credentials (including PostgreSQL password/URL and a Supabase JWT secret), and there are duplicated/malformed Supabase aliases. This does not alone prove browser-bundle exposure. Code references and deployed artifacts must be checked before removing variables.
+- Secret rotation remains pending. Rotate provider-issued Stripe, Supabase, Redis/KV and EmailJS credentials at their source, coordinate consumers, then update Vercel and redeploy. Do not replace provider-issued tokens with random strings.
+- Rotate `CRON_SECRET` only through a staged overlap and redeployment sequence so the existing scheduled account-retention job is not interrupted.
+
+### Stripe
+
+- Three live endpoints were previously inventoried: two Vercel webhook endpoint configurations point to `/api/stripe/webhook`; another points to a Supabase Edge Function in a separate project.
+- The Vercel handler verifies a signature, upserts completed Checkout sessions by `stripe_session_id`, and returns 500 when persistence fails so Stripe can retry. However, there is no demonstrated event-ID deduplication ledger, and invoice/subscription updates need replay/out-of-order tests.
+- The two endpoints to the same URL may have distinct signing secrets; a single `STRIPE_WEBHOOK_SECRET` cannot be assumed to validate both. Delivery history and the external Edge Function implementation are not available through this repository connection.
+- No live endpoint was disabled. Do not consolidate until endpoint-specific signing secrets, delivered event coverage, retry history, idempotency, and reconciliation are verified.
+- The connected Stripe context exposed here is live mode. No end-to-end test-mode payment was executed through the available Stripe connector.
+
+### GitHub / deployment
+
+- The branch protection API returned 403 for the detailed rules endpoint, but branch metadata reported `protected: true` and the workflow status check is active. Required review count and all advanced rule settings still need independent verification.
+- The latest verified production alias metadata pointed to commit `87e9a566c108e3199701b094564576540cf7e341`; the security branch preview is not production.
+- Re-check the public HTTP response, deployment commit, alias mapping, and core flows after the approved merge and production deployment.
+
+### Legal / commercial readiness
+
+The technical review does not establish legal formation or tax registration. The service owner must complete any required Spanish tax/social-security registrations and confirm the legal identity, contact address, pricing/tax display, cancellation, withdrawal and early-performance consent wording, privacy/cookie disclosures, retention, and B2B/B2C VAT handling with a qualified Spanish adviser before public paid sales. International selling requires a scoped market-by-market review; global legal compliance is not certified here.
 
 ## Release gate
 
-Do not declare the service invulnerable or legally certified. Do not disable live Stripe endpoints, rotate credentials without a dependency/rollback plan, or deploy a database migration before its SQL assertions and application checks pass. Keep the account-retention cron schedule unchanged.
+Do not describe the system as perfectly secure or legally certified. Do not merge or deploy if the current required GitHub checks are not green. Do not rotate provider-issued secrets without a consumer inventory and rollback sequence, disable Stripe live endpoints without delivery/idempotency evidence, or change the cron schedule.
