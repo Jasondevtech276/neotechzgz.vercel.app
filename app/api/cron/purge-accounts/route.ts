@@ -49,17 +49,12 @@ async function cancelOutstandingSubscriptions(
 }
 
 export async function GET(request: Request) {
-  // Rotation overlap: Vercel Cron uses CRON_SECRET; CRON_SECRET_NEXT allows
-  // a staged key rollover without interrupting the existing retention schedule.
-  const expectedSecrets = [process.env.CRON_SECRET, process.env.CRON_SECRET_NEXT]
-    .filter((secret): secret is string => Boolean(secret))
-  if (expectedSecrets.length === 0) {
-    console.error('[account-retention] Cron secrets are not configured')
+  const expectedSecret = process.env.CRON_SECRET
+  if (!expectedSecret) {
+    console.error('[account-retention] CRON_SECRET is not configured')
     return NextResponse.json({ error: 'Cron is not configured' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
-  let authorized = false
-  for (const secret of expectedSecrets) authorized = isAuthorized(request, secret) || authorized
-  if (!authorized) {
+  if (!isAuthorized(request, expectedSecret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
   }
 
