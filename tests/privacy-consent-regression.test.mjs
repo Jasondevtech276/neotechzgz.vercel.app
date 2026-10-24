@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs'
 
 test('cookie rejection and acceptance have equal button prominence', () => {
   const banner = readFileSync(new URL('../components/cookie-consent.tsx', import.meta.url), 'utf8')
-  assert.match(banner, /className="button button-primary" onClick=\{\(\) => choose\('essential'\)\}>Rechazar opcionales/)
-  assert.match(banner, /className="button button-primary" onClick=\{\(\) => choose\('all'\)\}>Aceptar todas/)
+  assert.match(banner, /className="button button-quiet" onClick=\{\(\) => choose\('essential'\)\}>Rechazar opcionales/)
+  assert.match(banner, /className="button button-quiet" onClick=\{\(\) => choose\('all'\)\}>Aceptar todas/)
 })
 
 test('third-party fonts are not fetched before consent', () => {
