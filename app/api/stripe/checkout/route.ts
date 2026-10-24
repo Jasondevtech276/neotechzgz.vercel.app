@@ -10,7 +10,7 @@ const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab
 
 function unavailable() {
   return NextResponse.json(
-    { error: 'Las compras están temporalmente pausadas mientras completamos las comprobaciones de contratación e impuestos.' },
+    { error: 'La contratación está temporalmente pausada mientras completamos las comprobaciones de seguridad, contratación e impuestos.' },
     { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '3600' } },
   )
 }
