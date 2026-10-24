@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://neotechzgz.vercel.app').replace(/\/$/, '')
-const TERMS_VERSION = '2026-10-24'
+const TERMS_VERSION = '2026-10-25'
+const EARLY_START_CONSENT_VERSION = '2026-10-25'
 const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function unavailable() {
@@ -39,6 +40,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Debes aceptar las condiciones de contratación vigentes antes de continuar.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
   }
 
+  if (body.acceptedEarlyStart !== true || body.earlyStartConsentVersion !== EARLY_START_CONSENT_VERSION) {
+    return NextResponse.json({ error: 'Debes confirmar expresamente la solicitud de inicio anticipado del servicio.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+  }
+  const consentedAt = new Date().toISOString()
+
   try {
     const stripe = getStripe()
     const session = await stripe.checkout.sessions.create({
@@ -53,6 +59,9 @@ export async function POST(request: Request) {
         product_id: product.id,
         terms_accepted: 'true',
         terms_version: TERMS_VERSION,
+        early_start_consent: 'true',
+        early_start_consent_version: EARLY_START_CONSENT_VERSION,
+        early_start_consent_at: consentedAt,
       },
       ...(product.mode === 'subscription' ? {
         subscription_data: {
@@ -61,6 +70,9 @@ export async function POST(request: Request) {
             product_id: product.id,
             terms_accepted: 'true',
             terms_version: TERMS_VERSION,
+            early_start_consent: 'true',
+            early_start_consent_version: EARLY_START_CONSENT_VERSION,
+            early_start_consent_at: consentedAt,
           },
         },
       } : {}),
