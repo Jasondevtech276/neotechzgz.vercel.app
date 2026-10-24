@@ -6,6 +6,8 @@ const checkout = readFileSync(new URL('../app/api/stripe/checkout/route.ts', imp
 const webhook = readFileSync(new URL('../app/api/stripe/webhook/route.ts', import.meta.url), 'utf8')
 const migration = readFileSync(new URL('../supabase/migrations/20261024150000_stripe_webhook_idempotency.sql', import.meta.url), 'utf8')
 const account = readFileSync(new URL('../app/account/page.tsx', import.meta.url), 'utf8')
+const cookies = readFileSync(new URL('../components/cookie-consent.tsx', import.meta.url), 'utf8')
+const styles = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 
 test('checkout fails closed and requires terms, tax and explicit idempotency', () => {
   assert.match(checkout, /CHECKOUT_ENABLED !== 'true'/)
@@ -18,6 +20,13 @@ test('checkout fails closed and requires terms, tax and explicit idempotency', (
   assert.match(account, /checked=\{acceptedTerms\}/)
   assert.match(account, /Idempotency-Key/)
   assert.match(account, /sessionStorage/)
+})
+
+test('cookie rejection and acceptance are equally styled and no third-party font loads before consent', () => {
+  assert.match(cookies, /choose\('essential'\)/)
+  assert.match(cookies, /choose\('all'\)/)
+  assert.match(cookies, /className="button button-quiet"/)
+  assert.doesNotMatch(styles, /fonts\.googleapis\.com/)
 })
 
 test('webhook persists and deduplicates Stripe event IDs', () => {
