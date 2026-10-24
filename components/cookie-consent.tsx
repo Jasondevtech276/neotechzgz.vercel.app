@@ -88,7 +88,7 @@ export function CookieConsent() {
                 setConfiguring(true)
               }}>Configurar</button>
             )}
-            <button className="button button-primary" onClick={() => choose('all')}>Aceptar todas</button>
+            <button className="button button-quiet" onClick={() => choose('all')}>Aceptar todas</button>
           </div>
         </aside>
       ) : hasChoice ? (
