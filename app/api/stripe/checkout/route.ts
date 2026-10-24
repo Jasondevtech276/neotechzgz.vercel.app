@@ -18,7 +18,7 @@ function unavailable() {
 
 export async function POST(request: Request) {
   // Fail closed until legal, tax, and Stripe test-mode checks have been completed.
-  if (process.env.CHECKOUT_ENABLED !== 'true' || process.env.STRIPE_AUTOMATIC_TAX_ENABLED !== 'true') return unavailable()
+  if (process.env.CHECKOUT_ENABLED !== 'true' || process.env.STRIPE_AUTOMATIC_TAX_ENABLED !== 'true' || process.env.STRIPE_ADAPTIVE_PRICING_ENABLED !== 'true') return unavailable()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       mode: product.mode,
       line_items: [{ price: product.stripePriceId, quantity: 1 }],
       automatic_tax: { enabled: true },
+      adaptive_pricing: { enabled: true },
       billing_address_collection: 'required',
       customer_email: user.email,
       client_reference_id: user.id,
