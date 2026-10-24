@@ -60,3 +60,25 @@ These are currently human-delivered professional/technical services. Remote deli
 - [ ] Verify local currency, tax, invoice and refund behavior.
 - [ ] Reconcile Stripe Tax/invoices with the ledger and accounting process.
 - [ ] Obtain qualified tax review before enabling live Checkout.
+
+
+## Other Spanish obligations — not universal checkout surcharges
+- **IRPF advance payments:** where applicable, a natural-person business using direct assessment generally makes quarterly payments under Modelo 130. AEAT states the general advance-payment percentage is 20% of the relevant net result, subject to calculations and exceptions. This is a payment on account of the owner's annual income tax, not a 20% sales tax and must not be added as a line-item surcharge to every customer.
+- **IRPF withholding on professional invoices:** qualifying professional invoices paid by Spanish businesses may require withholding, generally 15%; eligible new professionals may apply 7% in the year of commencement and the following two years, subject to the applicable rules. This is withheld/remitted by the payer where required; it is not a universal customer tax and must be decided by activity classification and invoice recipient.
+- **RETA/social security:** contributions depend on the applicable regime and net-income bracket/base, and are seller-level operating costs. There is no one valid percentage to add to every product price. Check the current year's official table and the owner's situation.
+- **IAE:** the activity and relevant epigraph must be declared as required; exemptions and payment obligations depend on legal status and statutory conditions. Do not assume that no IAE payment means no census/activity declaration is required.
+- **Corporate income tax:** relevant if the business is operated through a company; it is calculated on taxable profit and is not a universal transaction tax. If the provider remains a natural person, the applicable income-tax framework is different.
+- **Invoice withholding and customer category:** a Spanish B2B customer may require invoice withholding in a qualifying case, while a consumer generally will not. The checkout should not add IRPF withholding to a B2C sale automatically.
+
+## Current base rates and how to use them
+- **21% Spanish VAT:** the general starting rate for ordinary taxable IT support, consultancy, systems analysis and web-development services located in the Spanish VAT territory, subject to correct classification and exceptions.
+- **20% Modelo 130:** general quarterly IRPF payment-on-account calculation where applicable, not a sales tax and not a percentage to display at checkout.
+- **15% / 7% professional IRPF withholding:** only in qualifying professional invoice situations; 7% may apply to eligible new professionals during the year of commencement and the following two years. Not a universal surcharge.
+- **RETA:** use the official 2026 net-income table and the person's circumstances; do not encode one fixed percentage in the product catalogue.
+- **Outside Spain:** do not use 21%, 20%, 15% or 7% as international defaults. Determine local VAT/GST/sales tax and registration obligations by customer type, SKU, location and threshold.
+
+Official references:
+- AEAT, Modelo 130 and 20% general payment-on-account calculation: https://sede.agenciatributaria.gob.es/Sede/procedimientos/G601.shtml and https://sede.agenciatributaria.gob.es/Sede/impuestos-tasas/impuesto-sobre-renta-personas-fisicas/modelo-130-irpf______esionales-estimacion-directa-fraccionado_/instrucciones.html
+- AEAT, professional withholding rates: https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/folleto-actividades-economicas/7_1-cuadro-relacion-tipos-retencion-porcentaje.html
+- AEAT, IAE declaration/exemptions: https://sede.agenciatributaria.gob.es/Sede/declaraciones-informativas-otros-impuestos-tasas/impuesto-sobre-actividades-economicas/que-actividades-debo-declarar.html
+- Social Security, 2026 RETA bases by net-income band: https://www.seg-social.es/wps/portal/wss/internet/Trabajadores/CotizacionRecaudacionTrabajadores/10721/10724/1320/1322/base%20de%20cotizacion
