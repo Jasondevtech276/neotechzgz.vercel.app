@@ -124,7 +124,7 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscriptionId)
-          .or(`latest_invoice_created_at.is.null,latest_invoice_created_at.lt.${invoice.created},and(latest_invoice_created_at.eq.${invoice.created},latest_invoice_id.lt.${invoice.id})`)
+          .or(`latest_invoice_created_at.is.null,latest_invoice_created_at.lt.${invoice.created},and(latest_invoice_created_at.eq.${invoice.created},latest_invoice_id.lt.${invoice.id}),and(latest_invoice_created_at.eq.${invoice.created},latest_invoice_id.eq.${invoice.id})`)
           .select('id')
         // No matching payment can mean checkout.session.completed has not arrived yet.
         // Throw so Stripe retries and the ledger records a retryable failure.
