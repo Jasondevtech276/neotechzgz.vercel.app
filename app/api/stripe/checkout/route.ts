@@ -5,16 +5,20 @@ import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://neotechzgz.vercel.app').replace(/\/$/, '')
+const TERMS_VERSION = '2026-10-25'
+const EARLY_START_CONSENT_VERSION = '2026-10-25'
+const IDEMPOTENCY_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function unavailable() {
+  return NextResponse.json(
+    { error: 'La contratación está temporalmente pausada mientras completamos las comprobaciones de seguridad, contratación e impuestos.' },
+    { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '3600' } },
+  )
+}
 
 export async function POST(request: Request) {
-  // Fail closed: checkout stays unavailable until the owner explicitly enables it
-  // after legal, tax, Stripe test-mode, and webhook idempotency release gates pass.
-  if (process.env.CHECKOUT_ENABLED !== 'true') {
-    return NextResponse.json(
-      { error: 'La contratación está temporalmente pausada. Inténtalo más tarde.' },
-      { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '3600' } },
-    )
-  }
+  // Fail closed until legal, tax, and Stripe test-mode checks have been completed.
+  if (process.env.CHECKOUT_ENABLED !== 'true' || process.env.STRIPE_AUTOMATIC_TAX_ENABLED !== 'true' || process.env.STRIPE_ADAPTIVE_PRICING_ENABLED !== 'true') return unavailable()
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -28,19 +32,59 @@ export async function POST(request: Request) {
   const product = getProduct(productId)
   if (!product) return NextResponse.json({ error: 'Producto no válido' }, { status: 400 })
 
+  const rawIdempotencyKey = request.headers.get('idempotency-key') ?? ''
+  if (!IDEMPOTENCY_KEY_PATTERN.test(rawIdempotencyKey)) {
+    return NextResponse.json({ error: 'Falta una clave de idempotencia válida. Actualiza la página e inténtalo de nuevo.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+  }
+  if (body.acceptedTerms !== true || body.termsVersion !== TERMS_VERSION) {
+    return NextResponse.json({ error: 'Debes aceptar las condiciones de contratación vigentes antes de continuar.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+  }
+
+  if (body.acceptedEarlyStart !== true || body.earlyStartConsentVersion !== EARLY_START_CONSENT_VERSION) {
+    return NextResponse.json({ error: 'Debes confirmar expresamente la solicitud de inicio anticipado del servicio.' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+  }
+  const consentedAt = new Date().toISOString()
+
   try {
     const stripe = getStripe()
     const session = await stripe.checkout.sessions.create({
       mode: product.mode,
       line_items: [{ price: product.stripePriceId, quantity: 1 }],
+      automatic_tax: { enabled: true },
+      adaptive_pricing: { enabled: true },
+      billing_address_collection: 'required',
       customer_email: user.email,
       client_reference_id: user.id,
-      metadata: { user_id: user.id, product_id: product.id },
-      ...(product.mode === 'subscription' ? { subscription_data: { metadata: { user_id: user.id, product_id: product.id } } } : {}),
+      metadata: {
+        user_id: user.id,
+        product_id: product.id,
+        terms_accepted: 'true',
+        terms_accepted_at: consentedAt,
+        terms_version: TERMS_VERSION,
+        early_start_consent: 'true',
+        early_start_consent_version: EARLY_START_CONSENT_VERSION,
+        early_start_consent_at: consentedAt,
+      },
+      ...(product.mode === 'subscription' ? {
+        subscription_data: {
+          metadata: {
+            user_id: user.id,
+            product_id: product.id,
+            terms_accepted: 'true',
+            terms_accepted_at: consentedAt,
+            terms_version: TERMS_VERSION,
+            early_start_consent: 'true',
+            early_start_consent_version: EARLY_START_CONSENT_VERSION,
+            early_start_consent_at: consentedAt,
+          },
+        },
+      } : {}),
       success_url: `${SITE_URL}/account?payment=success`,
       cancel_url: `${SITE_URL}/account?payment=cancelled`,
+    }, {
+      idempotencyKey: `checkout:${user.id}:${rawIdempotencyKey}`,
     })
-    if (!session.url) return NextResponse.json({ error: 'Stripe no devolvió una URL de pago' }, { status: 502 })
+    if (!session.url) return NextResponse.json({ error: 'Stripe no devolvió una URL de pago' }, { status: 502, headers: { 'Cache-Control': 'no-store' } })
     return NextResponse.json({ url: session.url }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[stripe-checkout] Session creation failed:', error instanceof Error ? error.name : 'UnknownError')
