@@ -9,10 +9,14 @@ const account = readFileSync(new URL('../app/account/page.tsx', import.meta.url)
 const cookies = readFileSync(new URL('../components/cookie-consent.tsx', import.meta.url), 'utf8')
 const styles = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 const legal = readFileSync(new URL('../app/legal/page.tsx', import.meta.url), 'utf8')
+const conditions = readFileSync(new URL('../app/condiciones/page.tsx', import.meta.url), 'utf8')
+const withdrawal = readFileSync(new URL('../app/desistimiento/page.tsx', import.meta.url), 'utf8')
 
 test('checkout fails closed and requires terms, tax and explicit idempotency', () => {
   assert.match(checkout, /CHECKOUT_ENABLED !== 'true'/)
   assert.match(checkout, /STRIPE_AUTOMATIC_TAX_ENABLED !== 'true'/)
+  assert.match(checkout, /STRIPE_ADAPTIVE_PRICING_ENABLED !== 'true'/)
+  assert.match(checkout, /adaptive_pricing: \{ enabled: true \}/)
   assert.match(checkout, /body\.acceptedTerms !== true/)
   assert.match(checkout, /body\.termsVersion !== TERMS_VERSION/)
   assert.match(checkout, /body\.acceptedEarlyStart !== true/)
@@ -24,6 +28,13 @@ test('checkout fails closed and requires terms, tax and explicit idempotency', (
   assert.match(account, /checked=\{acceptedTerms\}/)
   assert.match(account, /Idempotency-Key/)
   assert.match(account, /sessionStorage/)
+  assert.match(account, /acceptedEarlyStart/)
+  assert.match(account, /earlyStartConsentVersion/)
+  assert.match(account, /href="\/condiciones"/)
+  assert.match(conditions, /14 días naturales/)
+  assert.match(conditions, /BORRADOR/)
+  assert.match(withdrawal, /Solicitud de inicio anticipado/)
+  assert.match(withdrawal, /14 días naturales/)
 })
 
 test('cookie rejection and acceptance are equally styled and no third-party font loads before consent', () => {
