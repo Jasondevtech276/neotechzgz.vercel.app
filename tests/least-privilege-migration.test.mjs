@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const migration = readFileSync(
-  new URL('../supabase/migrations/20261024150000_least_privilege_public_tables.sql', import.meta.url),
+  new URL('../supabase/migrations/20261024133121_least_privilege_public_tables_20261024150000.sql', import.meta.url),
   'utf8',
 )
 
