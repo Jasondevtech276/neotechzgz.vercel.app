@@ -77,7 +77,7 @@ export function CookieConsent() {
             )}
           </div>
           <div className="cookie-actions">
-            <button className="button button-quiet" onClick={() => choose('essential')}>Rechazar opcionales</button>
+            <button className="button button-primary" onClick={() => choose('essential')}>Rechazar opcionales</button>
             {configuring ? (
               <button className="button button-quiet" onClick={saveCustom}>Guardar selección</button>
             ) : (
