@@ -7,6 +7,15 @@ import { checkRateLimit } from '@/lib/rate-limit'
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://neotechzgz.vercel.app').replace(/\/$/, '')
 
 export async function POST(request: Request) {
+  // Fail closed: checkout stays unavailable until the owner explicitly enables it
+  // after legal, tax, Stripe test-mode, and webhook idempotency release gates pass.
+  if (process.env.CHECKOUT_ENABLED !== 'true') {
+    return NextResponse.json(
+      { error: 'La contratación está temporalmente pausada. Inténtalo más tarde.' },
+      { status: 503, headers: { 'Cache-Control': 'no-store', 'Retry-After': '3600' } },
+    )
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user?.email) return NextResponse.json({ error: 'Debes iniciar sesión' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
