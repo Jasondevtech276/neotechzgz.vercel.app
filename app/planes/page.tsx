@@ -29,7 +29,7 @@ export default function PlanesPage() {
           </article>
         ))}
       </div>
-      <p className="inner-disclaimer">Los tiempos indicados son objetivos de primera respuesta, no una garantía de resolución. Confirma disponibilidad, cobertura, horas no consumidas y condiciones por escrito antes de contratar.</p>
+      <p className="inner-disclaimer">Los tiempos indicados son objetivos de primera respuesta, no una garantía de resolución. Los importes visibles son referencias provisionales y la contratación online permanece pausada: no realices pagos. Antes de reabrirla se confirmará el precio total aplicable, el tratamiento del IVA u otros impuestos, la moneda de cobro y las condiciones específicas según el cliente y su ubicación. Para servicios tecnológicos ordinarios sujetos al IVA español, el tipo general de referencia es el 21 %, pero no es aplicable universalmente a todas las operaciones.</p>
     </InnerPage>
   )
 }
