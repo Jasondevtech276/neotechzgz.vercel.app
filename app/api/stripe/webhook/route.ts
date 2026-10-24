@@ -92,17 +92,42 @@ export async function POST(request: Request) {
         .eq('stripe_subscription_id', subscription.id).select('id')
       requirePersistedRows(result)
     } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
-      const invoice = event.data.object as Stripe.Invoice
+      const eventInvoice = event.data.object as Stripe.Invoice
+      // Retrieve Stripe's current invoice state: webhook events can arrive out of order.
+      const invoice = await getStripe().invoices.retrieve(eventInvoice.id)
       const subscriptionId = getInvoiceSubscriptionId(invoice)
-      if (subscriptionId) {
+      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? null
+      const invoiceResult = await admin.from('stripe_invoices').upsert({
+        stripe_invoice_id: invoice.id,
+        stripe_subscription_id: subscriptionId,
+        stripe_customer_id: customerId,
+        status: invoice.status ?? 'unknown',
+        amount_due: invoice.amount_due,
+        amount_paid: invoice.amount_paid,
+        currency: invoice.currency,
+        invoice_created_at: invoice.created,
+        hosted_invoice_url: invoice.hosted_invoice_url ?? null,
+        livemode: event.livemode,
+        last_event_id: event.id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'stripe_invoice_id' }).select('stripe_invoice_id')
+      if (invoiceResult.error || !invoiceResult.data?.length) throw new Error('Stripe invoice persistence failed')
+
+      if (subscriptionId && (invoice.status === 'paid' || invoice.status === 'open')) {
         const result = await admin.from('payments')
           .update({
-            status: event.type === 'invoice.paid' ? 'paid' : 'failed',
+            status: invoice.status === 'paid' ? 'paid' : 'failed',
             invoice_id: invoice.id,
+            latest_invoice_id: invoice.id,
+            latest_invoice_created_at: invoice.created,
             receipt_url: invoice.hosted_invoice_url ?? null,
             updated_at: new Date().toISOString(),
           })
-          .eq('stripe_subscription_id', subscriptionId).select('id')
+          .eq('stripe_subscription_id', subscriptionId)
+          .or(`latest_invoice_created_at.is.null,latest_invoice_created_at.lt.${invoice.created},and(latest_invoice_created_at.eq.${invoice.created},latest_invoice_id.lt.${invoice.id})`)
+          .select('id')
+        // No matching payment can mean checkout.session.completed has not arrived yet.
+        // Throw so Stripe retries and the ledger records a retryable failure.
         requirePersistedRows(result)
       }
     }
