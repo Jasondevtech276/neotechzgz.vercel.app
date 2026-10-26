@@ -73,3 +73,16 @@ Deno.test("duplicate and storage failures have safe responses", async () => {
     if ((await handler(await signedRequest(payload()))).status !== 500) throw new Error("Expected retryable 500");
   }
 });
+
+Deno.test("oversized payload is rejected before signature verification or persistence", async () => {
+  let calls = 0;
+  const handler = createHandler({ getEnv, persistEvent: async () => { calls++; return null; } });
+  const response = await handler(new Request("https://example.invalid", {
+    method: "POST",
+    headers: { "stripe-signature": "t=1,v1=invalid" },
+    body: "x".repeat(1_048_577),
+  }));
+  if (response.status !== 413 || calls !== 0) {
+    throw new Error("Oversized payload was not rejected safely");
+  }
+});
