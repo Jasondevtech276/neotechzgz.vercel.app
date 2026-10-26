@@ -15,6 +15,36 @@ type HandlerDependencies = {
   persistEvent?: (event: StoredEvent) => Promise<{ code?: string } | null>;
 };
 
+const MAX_BODY_BYTES = 1_048_576;
+
+async function readBodyLimited(request: Request): Promise<string | null> {
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_BODY_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -55,7 +85,10 @@ export function createHandler(dependencies: HandlerDependencies = {}) {
       return json({ error: "test_receiver_not_configured" }, 503);
     }
 
-    const rawBody = await request.text();
+    const rawBody = await readBodyLimited(request);
+    if (rawBody === null) {
+      return json({ error: "payload_too_large" }, 413);
+    }
     const stripe = new Stripe(stripeTestSecret, {
       httpClient: Stripe.createFetchHttpClient(),
     });
