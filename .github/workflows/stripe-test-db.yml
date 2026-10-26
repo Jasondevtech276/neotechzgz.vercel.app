@@ -1,0 +1,118 @@
+name: Isolated Stripe test database
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
+      - ".github/workflows/stripe-test-db.yml"
+  push:
+    branches:
+      - "audit/stripe-webhook-test-harness"
+    paths:
+      - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
+      - ".github/workflows/stripe-test-db.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stripe-test-db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-migration-and-access-tests:
+    name: PostgreSQL 17 migration, RLS and idempotency
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: neotech_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d neotech_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: neotech_test
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Create Supabase-compatible roles in the ephemeral database
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+              CREATE ROLE anon NOLOGIN;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+              CREATE ROLE authenticated NOLOGIN;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+              CREATE ROLE service_role NOLOGIN;
+            END IF;
+          END
+          $$;
+          SQL
+
+      - name: Apply isolated test migration
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261025170000_stripe_webhook_test_events.sql
+
+      - name: Assert RLS, least privilege and primary key
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            table_oid oid := 'public.stripe_webhook_test_events'::regclass;
+          BEGIN
+            IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid = table_oid) THEN
+              RAISE EXCEPTION 'RLS is not enabled';
+            END IF;
+            IF has_table_privilege('anon', table_oid, 'SELECT')
+              OR has_table_privilege('anon', table_oid, 'INSERT')
+              OR has_table_privilege('authenticated', table_oid, 'SELECT')
+              OR has_table_privilege('authenticated', table_oid, 'INSERT') THEN
+              RAISE EXCEPTION 'Client roles unexpectedly have table access';
+            END IF;
+            IF NOT has_table_privilege('service_role', table_oid, 'INSERT')
+              OR NOT has_table_privilege('service_role', table_oid, 'SELECT') THEN
+              RAISE EXCEPTION 'service_role lacks required access';
+            END IF;
+            IF NOT EXISTS (
+              SELECT 1
+              FROM pg_constraint
+              WHERE conrelid = table_oid AND contype = 'p'
+            ) THEN
+              RAISE EXCEPTION 'Event idempotency primary key is missing';
+            END IF;
+          END
+          $$;
+          SQL
+
+      - name: Verify event insert and duplicate rejection
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "INSERT INTO public.stripe_webhook_test_events (event_id, event_type, payload_sha256) VALUES ('evt_ci_test_001', 'payment_intent.succeeded', repeat('a', 64));"
+          count="$(psql -At -c "SELECT count(*) FROM public.stripe_webhook_test_events WHERE event_id = 'evt_ci_test_001';")"
+          test "$count" = "1"
+          if psql -v ON_ERROR_STOP=1 -c "INSERT INTO public.stripe_webhook_test_events (event_id, event_type, payload_sha256) VALUES ('evt_ci_test_001', 'payment_intent.succeeded', repeat('b', 64));"; then
+            echo "FAIL: duplicate event id was accepted"
+            exit 1
+          else
+            echo "PASS: duplicate event id rejected by primary key"
+          fi
