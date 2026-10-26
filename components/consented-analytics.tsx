@@ -15,13 +15,17 @@ declare global { interface Window { posthog?: PostHogClient } }
 type Consent = 'all' | 'essential' | 'analytics' | 'marketing' | null
 
 
+function getPostHog(): PostHogClient | undefined {
+  return (window as unknown as { posthog?: PostHogClient }).posthog
+}
+
 function initializePostHog() {
-  if (!POSTHOG_KEY || !POSTHOG_HOST || window.posthog) return
+  if (!POSTHOG_KEY || !POSTHOG_HOST || getPostHog()) return
   const bootstrap = document.createElement('script')
   bootstrap.dataset.neotechPosthog = 'true'
   bootstrap.text = `!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="init capture identify alias people.set people.set_once people.unset people.increment people.append people.remove people.group people.resetGroups setPersonProperties setPersonPropertiesForFlags resetGroups setGroupPropertiesForFlags startSessionRecording stopSessionRecording sessionRecordingStarted captureException".split(" ");for(n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);`
   document.head.appendChild(bootstrap)
-  window.posthog?.init(POSTHOG_KEY, { api_host: POSTHOG_HOST, autocapture: false, capture_pageview: false, capture_pageleave: false, disable_session_recording: true, persistence: 'memory', person_profiles: 'identified_only' })
+  getPostHog()?.init(POSTHOG_KEY, { api_host: POSTHOG_HOST, autocapture: false, capture_pageview: false, capture_pageleave: false, disable_session_recording: true, persistence: 'memory', person_profiles: 'identified_only' })
 }
 
 function readConsent(): Consent {
@@ -79,9 +83,9 @@ export function ConsentedAnalytics() {
   }, [consent])
 
   useEffect(() => {
-    if ((consent === 'all' || consent === 'analytics') && POSTHOG_KEY && POSTHOG_HOST && window.posthog) {
+    if ((consent === 'all' || consent === 'analytics') && POSTHOG_KEY && POSTHOG_HOST && getPostHog()) {
       // Exclude query strings and fragments to avoid capturing tokens or personal data in URLs.
-      window.posthog.capture('$pageview', { $current_url: window.location.origin + pathname })
+      getPostHog()?.capture('$pageview', { $current_url: window.location.origin + pathname })
     }
   }, [consent, pathname])
 
