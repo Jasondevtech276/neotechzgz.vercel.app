@@ -4,7 +4,7 @@ export default function LegalPage() {
       <a href="/" className="account-brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a>
       <p className="eyebrow">INFORMACIÓN LEGAL Y PRIVACIDAD</p>
       <h1>Tu tecnología, con reglas claras.</h1>
-      <p className="legal-lede">Información sobre el titular, la privacidad, las cookies y la contratación de servicios de NeoTech ZGZ. Última revisión: 25 de octubre de 2026.</p>
+      <p className="legal-lede">Información sobre el titular, la privacidad, las cookies y la contratación de servicios de NeoTech ZGZ. Última revisión: 26 de octubre de 2026.</p>
 
       <div className="legal-grid">
         <section id="aviso-legal">
@@ -35,7 +35,7 @@ export default function LegalPage() {
 
         <section>
           <h2>5. Destinatarios y proveedores</h2>
-          <p>Los datos solo se comunicarán cuando sea necesario para prestar el servicio o exista una base jurídica. Según la función utilizada, pueden intervenir proveedores de alojamiento y despliegue (Vercel), autenticación y base de datos (Supabase), pagos (Stripe), analítica (Google Analytics), publicidad/medición (Meta Pixel) y correo electrónico. Estos proveedores actuarán, según el caso, como encargados del tratamiento o responsables independientes. Las autoridades públicas podrán recibir datos cuando la ley lo exija. No vendemos datos personales.</p>
+          <p>Los datos solo se comunicarán cuando sea necesario para prestar el servicio o exista una base jurídica. Según la función utilizada, pueden intervenir proveedores de alojamiento y despliegue (Vercel), autenticación y base de datos (Supabase), pagos (Stripe), analítica (Google Analytics y PostHog, configurado sin autocaptura ni grabación de sesiones), publicidad/medición (Meta Pixel) y correo electrónico. Estos proveedores actuarán, según el caso, como encargados del tratamiento o responsables independientes. Las autoridades públicas podrán recibir datos cuando la ley lo exija. No vendemos datos personales.</p>
         </section>
 
         <section>
@@ -65,7 +65,7 @@ export default function LegalPage() {
 
         <section id="cookies">
           <h2>11. Cookies y tecnologías similares</h2>
-          <p>Las cookies técnicas estrictamente necesarias permiten el funcionamiento del sitio y recordar la elección de privacidad. Google Analytics para medición de audiencia y Meta Pixel para medición/publicidad solo deben cargarse si autorizas la categoría correspondiente en el banner o en las preferencias. Si rechazas una categoría, sus scripts no deben cargarse. Puedes cambiar tu elección en cualquier momento mediante el botón «Preferencias de cookies» disponible en la web. La preferencia se recuerda durante seis meses. La duración concreta y el inventario de cookies de terceros deben comprobarse en el navegador y actualizarse si cambian las herramientas.</p>
+          <p>Las cookies técnicas estrictamente necesarias permiten el funcionamiento del sitio y recordar la elección de privacidad. Google Analytics y PostHog para medición de audiencia, y Meta Pixel para medición/publicidad, solo deben cargarse si autorizas la categoría correspondiente en el banner o en las preferencias. Si rechazas una categoría, sus scripts no deben cargarse. Puedes cambiar tu elección en cualquier momento mediante el botón «Preferencias de cookies» disponible en la web. La preferencia se recuerda durante seis meses. La duración concreta y el inventario de cookies de terceros deben comprobarse en el navegador y actualizarse si cambian las herramientas.</p>
           <p>Google: <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">política de privacidad</a>. Meta: <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noreferrer">política de privacidad</a>.</p>
         </section>
 
