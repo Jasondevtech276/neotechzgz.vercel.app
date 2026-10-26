@@ -177,7 +177,13 @@ jobs:
           echo "STRIPE_TEST_WEBHOOK_SECRET=whsec_ci_ephemeral_only" >> "$GITHUB_ENV"
 
       - name: Run end-to-end handler to isolated PostgREST and PostgreSQL
-        run: deno test --node-modules-dir=none --allow-env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,STRIPE_TEST_WEBHOOK_SECRET,STRIPE_TEST_SECRET_KEY --allow-net=127.0.0.1,127.0.0.1:3000 supabase/functions/stripe-webhook-test/index.e2e.ts
+        run: |
+          if deno test --node-modules-dir=none --allow-env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,STRIPE_TEST_WEBHOOK_SECRET,STRIPE_TEST_SECRET_KEY --allow-net=127.0.0.1,127.0.0.1:3000 supabase/functions/stripe-webhook-test/index.e2e.ts; then
+            echo "PASS: webhook HTTP -> Supabase REST -> isolated PostgreSQL"
+          else
+            docker logs stripe-test-postgrest
+            exit 1
+          fi
 
       - name: Stop ephemeral PostgREST
         if: always()
