@@ -3,14 +3,18 @@ name: Isolated Stripe test database
 on:
   pull_request:
     paths:
+      - "supabase/functions/stripe-webhook-test/**"
       - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
       - ".github/workflows/stripe-test-db.yml"
+      - "tsconfig.json"
   push:
     branches:
       - "audit/stripe-webhook-test-harness"
     paths:
+      - "supabase/functions/stripe-webhook-test/**"
       - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
       - ".github/workflows/stripe-test-db.yml"
+      - "tsconfig.json"
 
 permissions:
   contents: read
@@ -47,6 +51,14 @@ jobs:
     steps:
       - name: Checkout test branch
         uses: actions/checkout@v4
+
+      - name: Type-check Supabase Edge Function in Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Validate Edge Function imports and types
+        run: deno check supabase/functions/stripe-webhook-test/index.ts
 
       - name: Install PostgreSQL client
         run: |
