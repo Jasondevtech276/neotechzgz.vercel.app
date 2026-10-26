@@ -20,22 +20,28 @@ const eventPayload = (id: string, livemode = false) => JSON.stringify({
   livemode, pending_webhooks: 1, request: { id: null, idempotency_key: null },
   type: "payment_intent.succeeded",
 });
-async function requestFor(body: string, validSignature = true) {
+async function postWebhook(baseUrl: string, body: string, validSignature = true) {
   const signature = validSignature
     ? await stripe.webhooks.generateTestHeaderStringAsync({ payload: body, secret: webhookSecret })
     : "t=1,v1=invalid";
-  return new Request("http://local.test/functions/v1/stripe-webhook-test", {
+  return await fetch(baseUrl, {
     method: "POST",
     headers: { "stripe-signature": signature, "content-type": "application/json" },
     body,
   });
 }
+function startReceiver() {
+  const server = Deno.serve({ hostname: "127.0.0.1", port: 0, onListen: () => {} }, createHandler());
+  const address = server.addr as Deno.NetAddr;
+  return { server, url: `http://127.0.0.1:${address.port}/functions/v1/stripe-webhook-test` };
+}
 
 Deno.test("E2E: signed test webhook persists only metadata through Supabase REST to isolated PostgreSQL; retries are idempotent", async () => {
-  const handler = createHandler();
+  const receiver = startReceiver();
+  try {
   const eventId = "evt_e2e_isolated_001";
   const body = eventPayload(eventId);
-  const first = await handler(await requestFor(body));
+  const first = await postWebhook(receiver.url, body);
   const firstJson = await first.json();
   if (first.status !== 200 || firstJson.duplicate !== false || firstJson.testMode !== true) {
     throw new Error("First signed event was not accepted: " + JSON.stringify({ status: first.status, body: firstJson }));
@@ -52,7 +58,7 @@ Deno.test("E2E: signed test webhook persists only metadata through Supabase REST
   }
   if ("payload" in data || "raw_payload" in data) throw new Error("Raw payload unexpectedly persisted");
 
-  const retry = await handler(await requestFor(body));
+  const retry = await postWebhook(receiver.url, body);
   const retryJson = await retry.json();
   if (retry.status !== 200 || retryJson.duplicate !== true) {
     throw new Error("Retry was not idempotent: " + JSON.stringify({ status: retry.status, body: retryJson }));
@@ -61,19 +67,26 @@ Deno.test("E2E: signed test webhook persists only metadata through Supabase REST
   const { count, error: countError } = await supabase.from("stripe_webhook_test_events")
     .select("event_id", { count: "exact", head: true }).eq("event_id", eventId);
   if (countError || count !== 1) throw new Error("Duplicate delivery created more than one row");
+  } finally {
+    await receiver.server.shutdown();
+  }
 });
 
 Deno.test("E2E: invalid signature and signed live-mode event never reach persistence", async () => {
-  const handler = createHandler();
-  const invalid = await handler(await requestFor(eventPayload("evt_e2e_invalid_001"), false));
+  const receiver = startReceiver();
+  try {
+  const invalid = await postWebhook(receiver.url, eventPayload("evt_e2e_invalid_001"), false);
   if (invalid.status !== 400) throw new Error("Invalid signature was not rejected");
 
   const liveBody = eventPayload("evt_e2e_live_001", true);
-  const live = await handler(await requestFor(liveBody));
+  const live = await postWebhook(receiver.url, liveBody);
   if (live.status !== 400) throw new Error("Live-mode event was not rejected");
 
   const { count, error } = await supabase.from("stripe_webhook_test_events")
     .select("event_id", { count: "exact", head: true })
     .in("event_id", ["evt_e2e_invalid_001", "evt_e2e_live_001"]);
   if (error || count !== 0) throw new Error("Rejected event unexpectedly reached persistence");
+  } finally {
+    await receiver.server.shutdown();
+  }
 });
