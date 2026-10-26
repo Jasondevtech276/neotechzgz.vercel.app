@@ -21,7 +21,7 @@ async function signedRequest(body: string, signature?: string) {
   return new Request("https://example.invalid", {
     method: "POST",
     headers: { "stripe-signature": signature ??
-      stripe.webhooks.generateTestHeaderString({ payload: body, secret: webhookSecret }) },
+      await stripe.webhooks.generateTestHeaderStringAsync({ payload: body, secret: webhookSecret }) },
     body,
   });
 }
