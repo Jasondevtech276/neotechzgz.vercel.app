@@ -60,6 +60,9 @@ jobs:
       - name: Validate Edge Function imports and types
         run: deno check --node-modules-dir=none supabase/functions/stripe-webhook-test/index.ts
 
+      - name: Run isolated webhook handler security tests
+        run: deno test --node-modules-dir=none supabase/functions/stripe-webhook-test/index.deno.ts
+
       - name: Install and verify Stripe and PostHog SDKs in the ephemeral runner
         run: |
           npm install --no-save stripe posthog-js
