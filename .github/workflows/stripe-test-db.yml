@@ -60,6 +60,11 @@ jobs:
       - name: Validate Edge Function imports and types
         run: deno check --node-modules-dir=none supabase/functions/stripe-webhook-test/index.ts
 
+      - name: Install and verify Stripe and PostHog SDKs in the ephemeral runner
+        run: |
+          npm install --no-save stripe posthog-js
+          node -e 'require("stripe"); require("posthog-js"); console.log("Stripe and PostHog SDKs available in ephemeral runner")'
+
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
