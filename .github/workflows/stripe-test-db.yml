@@ -27,7 +27,7 @@ jobs:
   postgres-migration-and-access-tests:
     name: PostgreSQL 17 migration, RLS and idempotency
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:17
@@ -85,10 +85,19 @@ jobs:
               CREATE ROLE authenticated NOLOGIN;
             END IF;
             IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
-              CREATE ROLE service_role NOLOGIN;
+              CREATE ROLE service_role NOLOGIN BYPASSRLS;
             END IF;
           END
-          $$;
+          $;
+          DO $
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
+              CREATE ROLE authenticator LOGIN NOINHERIT PASSWORD 'ephemeral_authenticator_pw';
+            END IF;
+          END
+          $;
+          GRANT anon, authenticated, service_role TO authenticator;
+          GRANT USAGE ON SCHEMA public TO service_role;
           SQL
 
       - name: Apply isolated test migration
@@ -124,6 +133,55 @@ jobs:
           END
           $$;
           SQL
+
+
+      - name: Start ephemeral PostgREST and create a one-run service token
+        env:
+          PGRST_JWT_SECRET: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # This secret is generated only inside the ephemeral runner and never persisted as a repository secret.
+          jwt_secret="$(openssl rand -hex 32)"
+          echo "PGRST_JWT_SECRET=$jwt_secret" >> "$GITHUB_ENV"
+          docker run --detach --rm --name stripe-test-postgrest --network host \
+            -e PGRST_DB_URI='postgres://authenticator:ephemeral_authenticator_pw@127.0.0.1:5432/neotech_test' \
+            -e PGRST_DB_SCHEMAS=public \
+            -e PGRST_DB_ANON_ROLE=anon \
+            -e PGRST_JWT_SECRET="$jwt_secret" \
+            postgrest/postgrest:v12.2.3
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail http://127.0.0.1:3000/ >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs stripe-test-postgrest
+              exit 1
+            fi
+            sleep 2
+          done
+          token="$(node <<'NODE'
+          const crypto = require("node:crypto");
+          const secret = process.env.PGRST_JWT_SECRET;
+          const b64 = (value) => Buffer.from(value).toString("base64url");
+          const header = b64(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+          const now = Math.floor(Date.now() / 1000);
+          const payload = b64(JSON.stringify({ role: "service_role", iat: now, exp: now + 900 }));
+          const unsigned = header + "." + payload;
+          const signature = crypto.createHmac("sha256", secret).update(unsigned).digest("base64url");
+          process.stdout.write(unsigned + "." + signature);
+          NODE
+          )"
+          echo "::add-mask::$token"
+          echo "SUPABASE_URL=http://127.0.0.1:3000" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$token" >> "$GITHUB_ENV"
+          echo "STRIPE_TEST_SECRET_KEY=sk_test_ci_placeholder" >> "$GITHUB_ENV"
+          echo "STRIPE_TEST_WEBHOOK_SECRET=whsec_ci_ephemeral_only" >> "$GITHUB_ENV"
+
+      - name: Run end-to-end handler to isolated PostgREST and PostgreSQL
+        run: deno test --allow-env=SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,STRIPE_TEST_WEBHOOK_SECRET,STRIPE_TEST_SECRET_KEY --allow-net=127.0.0.1:3000 supabase/functions/stripe-webhook-test/index.e2e.ts
+
+      - name: Stop ephemeral PostgREST
+        if: always()
+        run: docker rm --force stripe-test-postgrest || true
 
       - name: Verify event insert and duplicate rejection
         run: |
