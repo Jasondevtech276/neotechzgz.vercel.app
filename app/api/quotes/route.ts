@@ -72,13 +72,16 @@ export async function POST(request: Request) {
     }
     let budget = 0
     const product = getProduct(productIdByService[service])
-    if (product?.stripePriceId) {
+    if (product?.stripePriceLookupKey) {
       try {
         const mode = getStripeMode()
         const stripe = getStripe()
-        const price = await stripe.prices.retrieve(product.stripePriceId)
+        const priceList = await stripe.prices.list({ lookup_keys: [product.stripePriceLookupKey], active: true, limit: 2 })
+        const price = priceList.data.length === 1 ? priceList.data[0] : null
         if (
+          price &&
           price.active &&
+          price.lookup_key === product.stripePriceLookupKey &&
           price.livemode === (mode === 'live') &&
           price.currency === 'eur' &&
           price.unit_amount != null &&
