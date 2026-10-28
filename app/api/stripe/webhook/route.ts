@@ -147,7 +147,7 @@ export async function POST(request: Request) {
           price.livemode !== event.livemode ||
           (product.mode === 'subscription' && !price.recurring) ||
           (product.mode === 'payment' && Boolean(price.recurring)) ||
-          linePriceId !== product.stripePriceId ||
+          linePriceId !== session.metadata?.stripe_price_id ||
           line?.quantity !== 1 ||
           !session.currency ||
           (line?.amount_subtotal ?? 0) <= 0 ||
