@@ -139,7 +139,8 @@ export async function POST(request: Request) {
       price.livemode !== (stripeMode === 'live') ||
       price.currency !== 'eur' ||
       price.unit_amount == null ||
-      (product.mode === 'subscription' && !price.recurring) ||
+      price.unit_amount <= 0 ||
+      (product.mode === 'subscription' && (!price.recurring || price.recurring.interval !== 'month' || price.recurring.interval_count !== 1)) ||
       (product.mode === 'payment' && Boolean(price.recurring))
     ) {
       console.error('[stripe-checkout] Price configuration rejected', { productId: product.id })
