@@ -144,12 +144,14 @@ export async function POST(request: Request) {
         const line = lineItems.data.length === 1 ? lineItems.data[0] : null
         const linePriceId = line ? (typeof line.price === 'string' ? line.price : line.price?.id) : undefined
         if (
-          !price.active ||
           price.livemode !== event.livemode ||
-          price.currency !== session.currency ||
+          (product.mode === 'subscription' && !price.recurring) ||
+          (product.mode === 'payment' && Boolean(price.recurring)) ||
           linePriceId !== product.stripePriceId ||
           line?.quantity !== 1 ||
-          line?.amount_subtotal !== price.unit_amount
+          !session.currency ||
+          (line?.amount_subtotal ?? 0) <= 0 ||
+          (session.amount_total ?? 0) <= 0
         ) {
           throw new Error('Checkout line item does not match configured Stripe Price')
         }
