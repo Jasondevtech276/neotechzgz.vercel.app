@@ -59,7 +59,7 @@ async function submitQuote(e:FormEvent<HTMLFormElement>){
   const unitPrice = catalogPrice ? catalogPrice.amount / 100 : null
   const budget = unitPrice === null ? 0 : isHourly ? Number(hours) * unitPrice : unitPrice
   const data={name:String(form.get('name')||'').trim(),email:String(form.get('email')||'').trim(),company:String(form.get('company')||'').trim(),service,hours,notes:String(form.get('notes')||'').trim(),budget}
-  try{const saved=await saveQuote(data);if(saved.error)throw saved.error;setClientCode(typeof saved.data?.clientCode==='string'?saved.data.clientCode:'');setNotificationStatus(saved.data?.notification==='sent'?'sent':'failed');await downloadQuote(data);setStatus('success')}catch{setStatus('error')}
+  try{const saved=await saveQuote(data);if(saved.error)throw saved.error;setClientCode(typeof saved.data?.clientCode==='string'?saved.data.clientCode:'');setNotificationStatus(saved.data?.notification==='sent'?'sent':'failed');const confirmedBudget = typeof saved.data?.budget === 'number' ? saved.data.budget : data.budget;await downloadQuote({...data,budget:confirmedBudget});setStatus('success')}catch{setStatus('error')}
 }
 
  async function submitContact(e:FormEvent<HTMLFormElement>){e.preventDefault();setContactStatus('loading');const f=new FormData(e.currentTarget);try{const response=await fetch('/api/contact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:f.get('name'),email:f.get('email'),message:f.get('message')})});if(!response.ok)throw new Error('contact failed');setContactStatus('success');e.currentTarget.reset()}catch{setContactStatus('error')}}
