@@ -86,7 +86,7 @@ export async function POST(request: Request) {
           price.currency === 'eur' &&
           price.unit_amount != null &&
           price.unit_amount > 0 &&
-          (product.mode === 'subscription' ? Boolean(price.recurring) : !price.recurring)
+          (product.mode === 'subscription' ? Boolean(price.recurring && price.recurring.interval === 'month' && price.recurring.interval_count === 1) : !price.recurring)
         ) {
           budget = isHourly ? (price.unit_amount / 100) * Number(hours) : price.unit_amount / 100
         }
