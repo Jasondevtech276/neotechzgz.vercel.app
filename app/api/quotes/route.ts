@@ -121,7 +121,7 @@ export async function POST(request: Request) {
       console.error('[v0] quote confirmation email failed', emailError)
     }
 
-    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification }, { status: 201 })
+    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification, budget }, { status: 201 })
   } catch (error) {
     console.error('[v0] quote route failed', error)
     return NextResponse.json({ error: 'Solicitud no válida' }, { status: 400 })
