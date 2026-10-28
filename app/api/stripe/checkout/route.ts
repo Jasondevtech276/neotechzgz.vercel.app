@@ -102,6 +102,7 @@ export async function POST(request: Request) {
   const productId = typeof payload.productId === 'string' ? payload.productId : ''
   const product = getProduct(productId)
   if (!product) return NextResponse.json({ error: 'Producto no válido' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+  if (!product.stripePriceId) return unavailable()
 
   const rawIdempotencyKey = request.headers.get('idempotency-key') ?? ''
   if (!IDEMPOTENCY_KEY_PATTERN.test(rawIdempotencyKey)) {
@@ -143,6 +144,7 @@ export async function POST(request: Request) {
     const metadata = {
       user_id: user.id,
       product_id: product.id,
+      stripe_price_id: price.id,
       terms_accepted: 'true',
       terms_accepted_at: consentedAt,
       terms_version: TERMS_VERSION,
