@@ -28,7 +28,7 @@ function TrackingPanel() { const [code,setCode]=useState(''); const [email,setEm
 export default function Home(){
  const [open,setOpen]=useState(false); const [mobile,setMobile]=useState(false); const [service,setService]=useState('Soporte Remoto'); const [status,setStatus]=useState('idle'); const [clientCode,setClientCode]=useState(''); const [notificationStatus,setNotificationStatus]=useState<'sent'|'failed'|null>(null); const [contactStatus,setContactStatus]=useState('idle'); const [theme,setTheme]=useState<'night'|'light'>('night'); const [booting,setBooting]=useState(true); const [publicPrices,setPublicPrices]=useState<Record<string,PublicPrice>>({})
  useEffect(()=>{const t=window.setTimeout(()=>setBooting(false),650);return()=>window.clearTimeout(t)},[])
- useEffect(()=>{let active=true;fetch('/api/pricing',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(data=>{if(active&&data?.prices&&typeof data.prices==='object')setPublicPrices(data.prices)}).catch(()=>{});return()=>{active=false}},[])
+ useEffect(()=>{let active=true;fetch('/api/pricing').then(r=>r.ok?r.json():null).then(data=>{if(active&&data?.prices&&typeof data.prices==='object')setPublicPrices(data.prices)}).catch(()=>{});return()=>{active=false}},[])
  const formatPrice=(id:string)=>{const price=publicPrices[id];return price?new Intl.NumberFormat('es-ES',{style:'currency',currency:price.currency.toUpperCase(),maximumFractionDigits:2}).format(price.amount/100):'Consultar'}
  const quote=(title='Soporte Remoto')=>{setService(title);setStatus('idle');setClientCode('');setNotificationStatus(null);setOpen(true)}
  async function downloadQuote(data:{name:string;email:string;company:string;service:string;hours:number|null;notes:string;budget:number}){
