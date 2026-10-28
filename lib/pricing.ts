@@ -35,7 +35,7 @@ export async function getPublicPrices(): Promise<Record<string, PublicPrice>> {
         return null
       }
     }))
-    return Object.fromEntries(entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null))
+    return Object.fromEntries(entries.filter(entry => entry !== null))
   } catch {
     // Missing/mismatched keys or unconfigured prices must not expose stale estimates.
     return {}
