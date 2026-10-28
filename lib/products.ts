@@ -40,3 +40,7 @@ export function getProduct(id: string): Product | undefined {
     stripePriceId: configuredPriceId && /^price_[A-Za-z0-9]+$/.test(configuredPriceId) ? configuredPriceId : null,
   }
 }
+
+export function getProducts(): Product[] {
+  return CATALOG.map(product => getProduct(product.id)!).filter(Boolean)
+}
