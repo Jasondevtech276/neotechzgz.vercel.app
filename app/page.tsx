@@ -13,7 +13,7 @@ const plans = [['STARTER',['3 horas de soporte al mes','Email y teléfono','Resp
 type PublicPrice = { amount: number; currency: string; interval: string | null }
 function productIdForService(service: string) {
   const ids: Record<string, string> = {
-    'Soporte Remoto': 'remote-support', 'Soporte Remoto': 'remote-support',
+    'Soporte Remoto': 'remote-support',
     'Soporte Presencial': 'onsite-support', 'Desarrollo Web': 'web-development',
     'Consultoría IT': 'it-consulting', 'Análisis de Sistemas': 'systems-analysis',
     'Plan STARTER': 'starter', 'Plan PROFESSIONAL': 'professional', 'Plan ENTERPRISE': 'enterprise',
