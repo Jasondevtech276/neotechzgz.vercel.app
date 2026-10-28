@@ -14,11 +14,14 @@ export async function getPublicPrices(): Promise<Record<string, PublicPrice>> {
     const stripe = getStripe()
     const products = getProducts()
     const entries = await Promise.all(products.map(async product => {
-      if (!product.stripePriceId) return null
+      if (!product.stripePriceLookupKey) return null
       try {
-        const price = await stripe.prices.retrieve(product.stripePriceId)
+        const priceList = await stripe.prices.list({ lookup_keys: [product.stripePriceLookupKey], active: true, limit: 2 })
+        if (priceList.data.length !== 1) return null
+        const price = priceList.data[0]
         if (
           !price.active ||
+          price.lookup_key !== product.stripePriceLookupKey ||
           price.livemode !== (mode === 'live') ||
           price.currency !== 'eur' ||
           price.unit_amount == null ||
