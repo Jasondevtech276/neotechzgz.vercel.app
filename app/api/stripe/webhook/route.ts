@@ -137,8 +137,12 @@ export async function POST(request: Request) {
           throw new Error('Checkout session mode mismatch')
         }
 
+        const expectedPriceId = session.metadata?.stripe_price_id
+        if (!expectedPriceId || !/^price_[A-Za-z0-9]+$/.test(expectedPriceId)) {
+          throw new Error('Checkout session is missing its server-issued Price ID')
+        }
         const [price, lineItems] = await Promise.all([
-          stripe.prices.retrieve(product.stripePriceId),
+          stripe.prices.retrieve(expectedPriceId),
           stripe.checkout.sessions.listLineItems(session.id, { limit: 10 }),
         ])
         const line = lineItems.data.length === 1 ? lineItems.data[0] : null
