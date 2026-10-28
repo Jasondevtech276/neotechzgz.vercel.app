@@ -102,7 +102,7 @@ export async function POST(request: Request) {
   const productId = typeof payload.productId === 'string' ? payload.productId : ''
   const product = getProduct(productId)
   if (!product) return NextResponse.json({ error: 'Producto no válido' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
-  if (!product.stripePriceId) return unavailable()
+  if (!product.stripePriceLookupKey) return unavailable()
 
   const rawIdempotencyKey = request.headers.get('idempotency-key') ?? ''
   if (!IDEMPOTENCY_KEY_PATTERN.test(rawIdempotencyKey)) {
@@ -127,9 +127,15 @@ export async function POST(request: Request) {
 
   try {
     // Stripe's active Price object is authoritative; client-supplied amounts are never used.
-    const price = await stripe.prices.retrieve(product.stripePriceId)
+    const priceList = await stripe.prices.list({ lookup_keys: [product.stripePriceLookupKey], active: true, limit: 2 })
+    if (priceList.data.length !== 1) {
+      console.error('[stripe-checkout] Price lookup key is missing or ambiguous', { productId: product.id })
+      return unavailable()
+    }
+    const price = priceList.data[0]
     if (
       !price.active ||
+      price.lookup_key !== product.stripePriceLookupKey ||
       price.livemode !== (stripeMode === 'live') ||
       price.currency !== 'eur' ||
       price.unit_amount == null ||
