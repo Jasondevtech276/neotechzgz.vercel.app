@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const checkout = readFileSync(new URL('../app/api/stripe/checkout/route.ts', import.meta.url), 'utf8')
+const quoteRoute = readFileSync(new URL('../app/api/quotes/route.ts', import.meta.url), 'utf8')
+const homepage = readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8')
 const webhook = readFileSync(new URL('../app/api/stripe/webhook/route.ts', import.meta.url), 'utf8')
 const migration = readFileSync(new URL('../supabase/migrations/20261024150000_stripe_webhook_idempotency.sql', import.meta.url), 'utf8')
 const account = readFileSync(new URL('../app/account/page.tsx', import.meta.url), 'utf8')
