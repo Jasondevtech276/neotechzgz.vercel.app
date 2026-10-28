@@ -1,23 +1,82 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { getStripe } from '@/lib/stripe'
+import { getStripe, getStripeMode } from '@/lib/stripe'
+import { getProduct } from '@/lib/products'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInvoiceSubscriptionId } from '@/lib/stripe-invoice-subscription.mjs'
+
+const MAX_WEBHOOK_BODY_BYTES = 1_048_576
 
 function requirePersistedRows(result: { error: { message: string } | null; data: Array<{ id: string }> | null }) {
   if (result.error || !result.data?.length) throw new Error('Stripe event persistence failed')
 }
 
+async function readBodyLimited(request: Request): Promise<string | null> {
+  if (!request.body) return null
+  const reader = request.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > MAX_WEBHOOK_BODY_BYTES) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch {
+    return null
+  }
+}
+
+function json(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
+}
+
 export async function POST(request: Request) {
   const signature = request.headers.get('stripe-signature')
-  const secret = process.env.STRIPE_WEBHOOK_SECRET
-  if (!signature || !secret) return NextResponse.json({ error: 'Webhook no configurado' }, { status: 400 })
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!signature || !webhookSecret) return json({ error: 'Webhook no configurado' }, 503)
+
+  let stripe: ReturnType<typeof getStripe>
+  let stripeMode: ReturnType<typeof getStripeMode>
+  try {
+    stripeMode = getStripeMode()
+    stripe = getStripe()
+  } catch {
+    return json({ error: 'Webhook no configurado correctamente' }, 503)
+  }
+
+  const declaredLength = Number(request.headers.get('content-length') ?? 0)
+  if (declaredLength > MAX_WEBHOOK_BODY_BYTES) return json({ error: 'Payload demasiado grande' }, 413)
+  const rawBody = await readBodyLimited(request)
+  if (rawBody === null) return json({ error: 'Payload no válido o demasiado grande' }, 413)
 
   let event: Stripe.Event
   try {
-    event = getStripe().webhooks.constructEvent(await request.text(), signature, secret)
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
   } catch {
-    return NextResponse.json({ error: 'Firma inválida' }, { status: 400 })
+    return json({ error: 'Firma inválida' }, 400)
+  }
+
+  // A valid signature alone is not enough: test events must never update live state,
+  // and live events must never be accepted by a preview deployment.
+  if (event.livemode !== (stripeMode === 'live')) {
+    return json({ error: 'Modo de evento incompatible con el entorno' }, 400)
   }
 
   const admin = createAdminClient()
@@ -41,7 +100,7 @@ export async function POST(request: Request) {
         .maybeSingle()
       if (existing.error || !existing.data) throw new Error('Stripe event ledger lookup failed')
       if (existing.data.status === 'processed') {
-        return NextResponse.json({ received: true, duplicate: true }, { headers: { 'Cache-Control': 'no-store' } })
+        return json({ received: true, duplicate: true })
       }
 
       const now = new Date().toISOString()
@@ -58,28 +117,61 @@ export async function POST(request: Request) {
           .eq('event_id', event.id).eq('status', 'processing').lt('updated_at', staleCutoff).select('event_id')
         claimed = !reclaimed.error && Boolean(reclaimed.data?.length)
       }
-      if (!claimed) return NextResponse.json({ error: 'Evento en procesamiento; Stripe debe reintentarlo' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+      if (!claimed) return json({ error: 'Evento en procesamiento; Stripe debe reintentarlo' }, 500)
     } else {
       throw new Error('Stripe event claim failed')
     }
 
     if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
-      const session = event.data.object as Stripe.Checkout.Session
-      const userId = session.metadata?.user_id ?? session.client_reference_id
-      const productId = session.metadata?.product_id
-      if (userId && productId && (session.payment_status === 'paid' || event.type.includes('async'))) {
-        const result = await admin.from('payments')
-          .upsert({
-            user_id: userId,
-            stripe_session_id: session.id,
-            stripe_customer_id: typeof session.customer === 'string' ? session.customer : null,
-            stripe_subscription_id: typeof session.subscription === 'string' ? session.subscription : null,
-            product_id: productId,
-            status: 'paid',
-            amount_cents: session.amount_total ?? 0,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'stripe_session_id' }).select('id')
-        requirePersistedRows(result)
+      const eventSession = event.data.object as Stripe.Checkout.Session
+      const userId = eventSession.metadata?.user_id ?? eventSession.client_reference_id
+      const productId = eventSession.metadata?.product_id
+
+      if (userId && productId) {
+        const product = getProduct(productId)
+        if (!product) throw new Error('Unknown checkout product')
+
+        // Re-read current Stripe state instead of trusting an old event snapshot.
+        const session = await stripe.checkout.sessions.retrieve(eventSession.id)
+        if (session.livemode !== event.livemode || session.mode !== product.mode) {
+          throw new Error('Checkout session mode mismatch')
+        }
+
+        const [price, lineItems] = await Promise.all([
+          stripe.prices.retrieve(product.stripePriceId),
+          stripe.checkout.sessions.listLineItems(session.id, { limit: 10 }),
+        ])
+        const line = lineItems.data.length === 1 ? lineItems.data[0] : null
+        const linePriceId = line ? (typeof line.price === 'string' ? line.price : line.price?.id) : undefined
+        if (
+          !price.active ||
+          price.livemode !== event.livemode ||
+          price.currency !== session.currency ||
+          linePriceId !== product.stripePriceId ||
+          line?.quantity !== 1 ||
+          line?.amount_subtotal !== price.unit_amount
+        ) {
+          throw new Error('Checkout line item does not match configured Stripe Price')
+        }
+
+        // checkout.session.completed can be unpaid for asynchronous payment methods.
+        // Never mark it paid unless Stripe's current session confirms payment.
+        if (session.payment_status === 'paid') {
+          const result = await admin.from('payments')
+            .upsert({
+              user_id: userId,
+              stripe_session_id: session.id,
+              stripe_customer_id: typeof session.customer === 'string' ? session.customer : null,
+              stripe_subscription_id: typeof session.subscription === 'string' ? session.subscription : null,
+              product_id: product.id,
+              status: 'paid',
+              amount_cents: session.amount_total ?? 0,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'stripe_session_id' }).select('id')
+          requirePersistedRows(result)
+        } else if (event.type === 'checkout.session.async_payment_succeeded') {
+          throw new Error('Stripe reports async success but current session is not paid')
+        }
       }
     } else if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription
@@ -93,8 +185,8 @@ export async function POST(request: Request) {
       requirePersistedRows(result)
     } else if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
       const eventInvoice = event.data.object as Stripe.Invoice
-      // Retrieve Stripe's current invoice state: webhook events can arrive out of order.
-      const invoice = await getStripe().invoices.retrieve(eventInvoice.id)
+      // Webhook events can arrive out of order; Stripe's current invoice is authoritative.
+      const invoice = await stripe.invoices.retrieve(eventInvoice.id)
       const subscriptionId = getInvoiceSubscriptionId(invoice)
       const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? null
       const invoiceResult = await admin.from('stripe_invoices').upsert({
@@ -143,7 +235,7 @@ export async function POST(request: Request) {
         .eq('event_id', event.id).eq('status', 'processing')
     }
     console.error('[stripe-webhook] Persistence failed', { eventType: event.type, errorName: error instanceof Error ? error.name : 'UnknownError' })
-    return NextResponse.json({ error: 'No se pudo sincronizar el evento' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+    return json({ error: 'No se pudo sincronizar el evento' }, 500)
   }
-  return NextResponse.json({ received: true }, { headers: { 'Cache-Control': 'no-store' } })
+  return json({ received: true })
 }
