@@ -26,7 +26,7 @@ export async function getPublicPrices(): Promise<Record<string, PublicPrice>> {
           price.currency !== 'eur' ||
           price.unit_amount == null ||
           price.unit_amount <= 0 ||
-          (product.mode === 'subscription' && !price.recurring) ||
+          (product.mode === 'subscription' && (!price.recurring || price.recurring.interval !== 'month' || price.recurring.interval_count !== 1)) ||
           (product.mode === 'payment' && Boolean(price.recurring))
         ) return null
         return [product.id, {
