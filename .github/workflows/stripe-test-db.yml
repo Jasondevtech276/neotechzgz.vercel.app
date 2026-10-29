@@ -15,6 +15,7 @@ on:
       - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
       - ".github/workflows/stripe-test-db.yml"
       - "tsconfig.json"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,6 +27,8 @@ concurrency:
 jobs:
   postgres-migration-and-access-tests:
     name: PostgreSQL 17 migration, RLS and idempotency
+    # Manual runs are restricted to the dedicated audit branch.
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/audit/stripe-webhook-test-harness'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
