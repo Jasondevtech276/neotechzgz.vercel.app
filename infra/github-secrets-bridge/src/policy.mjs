@@ -53,7 +53,7 @@ function concatBytes(parts) {
 export function pemToPkcs8Bytes(pem) {
   if (typeof pem !== "string") throw new TypeError("GitHub App private key is missing");
   const pkcs1 = /-----BEGIN RSA PRIVATE KEY-----/.test(pem);
-  const encoded = pem.replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----|-----END (?:RSA )?PRIVATE KEY-----|\\s/g, "");
+  const encoded = pem.replace(/-----BEGIN (?:RSA )?PRIVATE KEY-----|-----END (?:RSA )?PRIVATE KEY-----|\s/g, "");
   const binary = atob(encoded);
   const raw = Uint8Array.from(binary, (character) => character.charCodeAt(0));
   if (!pkcs1) return raw;
