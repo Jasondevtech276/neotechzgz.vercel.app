@@ -12,7 +12,7 @@ Default storage target: private Cloudflare R2 bucket `neotechzgz-db-backups` (WE
 
 1. Runs daily at 02:17 UTC, or manually through `workflow_dispatch`.
 2. Uses the PostgreSQL 17 client to create a custom-format `pg_dump` through the Supabase Session Pooler (port 5432) with TLS required.
-3. Encrypts and deduplicates the dump locally with Restic before uploading it to R2 over the S3-compatible API.
+3. Encrypts and deduplicates the dump locally with Restic before uploading it to the configured S3-compatible backend (Cloudflare R2 or Backblaze B2).
 4. Checks repository metadata and reads a 5% sample of repository data.
 5. Keeps 7 daily and 4 weekly snapshots, then prunes obsolete Restic data.
 6. Deletes the plaintext temporary dump from the ephemeral runner.
