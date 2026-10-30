@@ -7,3 +7,5 @@ minify = true
 [vars]
 GITHUB_REPOSITORY = "Jasondevtech276/neotechzgz.vercel.app"
 ENABLE_TEST_SECRET_PROBE = "false"
+ENABLE_PRODUCTION_SECRET_OPS = "false"
+ALLOWED_SECRET_NAMES = ""
