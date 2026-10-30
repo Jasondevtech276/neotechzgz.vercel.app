@@ -2,7 +2,17 @@
 
 ## Status
 
-This workflow is staged on branch `backup/secure-supabase-r2`. It is not active on the default branch and has not run. It requires GitHub Actions variables/secrets to be configured first.
+Last verified: 2026-10-30.
+
+- This workflow is staged on branch `backup/secure-supabase-r2`; it is not active on the default branch (`main`).
+- GitHub Actions reports no workflow runs for this backup branch.
+- Cloudflare R2 bucket `neotechzgz-db-backups` exists in `WEUR`, Standard storage class.
+- The bucket object-list API returned an empty list at verification time. No Restic repository or snapshots are currently evidenced by the bucket contents.
+- Managed `r2.dev` access is disabled and no custom domains are configured.
+- The workflow requires GitHub Actions variables/secrets before its first run.
+- The workflow was hardened to refuse Restic initialization if the bucket is non-empty but Restic cannot read its config. It initializes only after a successful S3 listing proves the dedicated bucket is empty.
+
+Do not infer that Restic is initialized or that backups exist until a successful workflow run creates and verifies a snapshot.
 
 Target database: the canonical application project `qkzmpxyefuqdhyxwfjcw` (EU-West-2), as identified in the repository security audit. Do not point this workflow at the legacy/alternate Supabase project without an explicit review.
 
