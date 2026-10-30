@@ -5,7 +5,8 @@ import {
   constantTimeEqual,
   isAllowedProbeName,
   isAllowedProductionName,
-  parseBearer,\n  pemToPkcs8Bytes,
+  parseBearer,
+  pemToPkcs8Bytes,
 } from "../src/policy.mjs";
 
 test("only the fixed reserved probe secret is allowed for the probe", () => {
