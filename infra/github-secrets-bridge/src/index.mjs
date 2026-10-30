@@ -8,7 +8,7 @@ import {
 
 const GITHUB_API = "https://api.github.com";
 const API_VERSION = "2022-11-28";
-const MCP_VERSION = "2025-03-26";
+const MCP_VERSION = "2025-11-25";
 
 const json = (body, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(body), {
@@ -45,7 +45,7 @@ async function createAppJwt(env) {
   const unsigned = `${header}.${payload}`;
   const key = await crypto.subtle.importKey(
     "pkcs8",
-    pemToBytes(env.GITHUB_APP_PRIVATE_KEY),
+    pemToPkcs8Bytes(env.GITHUB_APP_PRIVATE_KEY),
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"],
