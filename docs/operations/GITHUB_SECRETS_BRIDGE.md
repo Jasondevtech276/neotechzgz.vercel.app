@@ -2,7 +2,7 @@
 
 ## Deployment state
 
-This implementation is staged on branch `feat/github-secrets-bridge`. A fail-closed placeholder Worker named `neotechzgz-github-secrets-bridge` has been created in Cloudflare with `workers_dev=false`, no bindings, and a 503 response; it is not publicly reachable and has no access to GitHub secrets. The actual MCP Worker bundle has not been deployed. Cloudflare's Workers Builds repository-connection API returned HTTP 404 because the account is disconnected from GitHub. Connect only this new placeholder Worker to GitHub in Cloudflare Dashboard → Workers & Pages → `neotechzgz-github-secrets-bridge` → Settings → Builds → Connect. Do not connect the existing production Worker `neotechzgz`.
+This implementation is staged on branch `feat/github-secrets-bridge`. A fail-closed placeholder Worker named `neotechzgz-github-secrets-bridge` has been created in Cloudflare with `workers_dev=false`, no bindings, and a 503 response; it is not publicly reachable and has no access to GitHub secrets. The actual MCP Worker bundle has not been deployed. Cloudflare's Workers Builds repository connection is now established for this repository. The existing production Worker `neotechzgz` remains untouched.
 
 The Worker is designed to expose a private, authenticated MCP endpoint for the fixed repository `Jasondevtech276/neotechzgz.vercel.app`. It does not proxy arbitrary GitHub API paths and does not return secret values.
 
@@ -53,7 +53,7 @@ The private ChatGPT plugin uses API-key/Bearer authentication. The bearer creden
 ## Validation sequence
 
 1. Run `npm test` and `npm run check` from this directory.
-2. Connect the placeholder Worker to the feature branch using Cloudflare Workers Builds; authorize Cloudflare's GitHub App for this repository only. Configure its root directory as `/infra/github-secrets-bridge`, build command `npm install --ignore-scripts --no-audit --no-fund`, and deploy command `npx wrangler deploy`.
+2. Configure a Workers Builds trigger for this repository and the `feat/github-secrets-bridge` branch only; do not target `main`. Configure its root directory as `/infra/github-secrets-bridge`, build command `npm install --ignore-scripts --no-audit --no-fund`, and deploy command `npx wrangler deploy`.
 3. Confirm unauthenticated requests to `/mcp` return HTTP 401.
 4. Connect the private plugin using the bearer credential and confirm `bridge_status`.
 5. Confirm `list_secret_names` returns names only.
