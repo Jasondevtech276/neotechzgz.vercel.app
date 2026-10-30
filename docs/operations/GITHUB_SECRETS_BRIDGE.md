@@ -1,0 +1,69 @@
+# NEOTECHZGZ — GitHub Actions Secrets bridge
+
+## Deployment state
+
+This implementation is staged on branch `feat/github-secrets-bridge`. It is not deployed and has no access to GitHub secrets yet.
+
+The Worker is designed to expose a private, authenticated MCP endpoint for the fixed repository `Jasondevtech276/neotechzgz.vercel.app`. It does not proxy arbitrary GitHub API paths and does not return secret values.
+
+## Security model
+
+- The repository is hard-coded; callers cannot select another owner or repository.
+- MCP requests require a bearer token with at least 256 bits of entropy.
+- The GitHub App installation token is short-lived and created server-side from the App private key.
+- GitHub Actions secret values are encrypted with the repository's GitHub public key using libsodium sealed boxes before the REST API call.
+- Secret names and timestamps may be listed; secret values are never read or returned.
+- The only write/delete probe in this release is the fixed name `NEOTECHZGZ_BRIDGE_PROBE`.
+- The probe refuses to overwrite an existing name, verifies metadata visibility, deletes the probe, and verifies absence.
+- Production secret creation, update, and deletion tools are deliberately absent from the MCP surface.
+- No credentials are committed to Git, plugin files, workflow logs, or this document.
+
+## GitHub App prerequisites
+
+Create a GitHub App and install it only on `Jasondevtech276/neotechzgz.vercel.app`.
+
+Grant only the repository permissions required by the Actions Secrets REST API:
+- Repository metadata: read-only.
+- Actions secrets: read/write (confirm the exact permission label shown by GitHub's App registration UI and the current REST API documentation).
+
+Do not grant Contents, Administration, Workflows, Deployments, or organization-wide access. Generate an App private key and retain it securely.
+
+Record the App ID and installation ID. Do not put the private key in GitHub repository files or chat.
+
+## Cloudflare Worker secrets
+
+Set these values in the Worker environment using the Cloudflare Dashboard or a secure secrets-management workflow:
+
+- `BRIDGE_API_TOKEN`: random bearer credential, at least 32 random bytes; never reuse a GitHub token.
+- `GITHUB_APP_PRIVATE_KEY`: the GitHub App PEM private key.
+
+Set these non-secret variables:
+- `GITHUB_APP_ID`: GitHub App ID.
+- `GITHUB_INSTALLATION_ID`: installation ID for the single repository.
+- `ENABLE_TEST_SECRET_PROBE`: `true` only during the controlled probe test; reset to `false` afterwards.
+
+The private ChatGPT plugin uses API-key/Bearer authentication. The bearer credential must be entered through the plugin's supported connection/authentication UI, not in chat or in `mcp.json`.
+
+## Validation sequence
+
+1. Run `npm test` and `npm run check` from this directory.
+2. Deploy the Worker with `wrangler deploy` after the GitHub App and Worker secrets have been configured.
+3. Confirm unauthenticated requests to `/mcp` return HTTP 401.
+4. Connect the private plugin using the bearer credential and confirm `bridge_status`.
+5. Confirm `list_secret_names` returns names only.
+6. Temporarily enable `ENABLE_TEST_SECRET_PROBE`; run `test_secret_roundtrip` once.
+7. Verify the reserved probe is absent from GitHub Actions Secrets afterwards.
+8. Disable `ENABLE_TEST_SECRET_PROBE` and rotate the temporary bridge bearer credential if it was used for initial connection testing.
+
+## Release gates
+
+- [ ] GitHub App exists and is installed on the single intended repository.
+- [ ] App permissions are least-privilege and independently reviewed.
+- [ ] Worker bearer credential and App private key are stored as Cloudflare Worker secrets.
+- [ ] Worker is deployed and unauthenticated access returns 401.
+- [ ] Private plugin is connected and its bearer auth is verified.
+- [ ] Harmless probe create/list/delete round-trip passes.
+- [ ] Probe is absent after test and test mode is disabled.
+- [ ] No production secret mutation capability is enabled.
+
+**Current decision: HOLD.** This bridge release intentionally does not expose production secret writes or deletes. Do not use it to rotate credentials until a separate reviewed change implements the user-mediated secret-entry flow and production allowlist.
