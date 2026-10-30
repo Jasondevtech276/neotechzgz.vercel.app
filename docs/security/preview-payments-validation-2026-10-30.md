@@ -83,3 +83,28 @@ Estos datos son referencias, no equivalencias exactas de alcance. Los importes p
 3. Asignar un administrador Preview de forma explícita y fuera de metadatos editables.
 4. Completar el inventario de consumidores de credenciales, emitir nuevas claves en cada proveedor y rotar una por una con solapamiento y rollback.
 5. Revisar alcance y precios comerciales, IVA, condiciones y fiscalidad en la fase final.
+
+
+## Actualización de verificación — 2026-10-30 (revisión posterior)
+
+- PR #69 sigue `open`, `draft=true`, `merged=false`; HEAD: `317b3865ab3af1eb476b101dcc420f029a4c30a2`.
+- Para ese HEAD, GitHub Actions confirma:
+  - Security build gate run `40983942489`: SUCCESS; pasos `npm ci`, `npm audit --audit-level=high`, `npm test` y `npm run build` completados.
+  - Isolated Stripe test database run `40983942498`: SUCCESS; PostgreSQL 17, Deno checks, test del handler, migración aislada y comprobaciones de RLS/idempotencia completadas.
+- Vercel Preview más reciente: `dpl_FZTSvi2NpqWeVoQBqao64WszAyNs`, READY, commit `317b3865ab3af1eb476b101dcc420f029a4c30a2`.
+- Región observada del deployment Vercel: `iad1`. Región declarada del proyecto Supabase Preview en la evidencia anterior: `eu-central-1`. La diferencia sigue abierta; Preview sólo debe usar datos sintéticos hasta decidir la residencia regional. No se ha cambiado la región.
+- Inventario no descifrado de variables Preview + rama audit: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`, `NEXT_PUBLIC_POSTHOG_HOST`. Las variables sensibles aparecen como secret/sensitive y no se solicitaron valores. No hay en esta configuración metadatos de credenciales Production.
+- El checkout sigue cerrado: no se observan habilitados `CHECKOUT_ENABLED`, `STRIPE_AUTOMATIC_TAX_ENABLED` ni `STRIPE_ADAPTIVE_PRICING_ENABLED` en el inventario Preview de la rama audit.
+- Los ocho productos y ocho precios TEST del catálogo de aplicación están presentes, activos, EUR, `livemode=false`, con sus `lookup_keys` esperadas. No se crearon duplicados en esta revisión.
+- Se añadió `docs/commercial/pricing-market-benchmark-2026-10-30.md` con fuentes españolas, dictamen por producto y límites propuestos para repricing. Los precios continúan siendo hipótesis TEST, no tarifas Live aprobadas.
+- La conexión Supabase actual rechazó una nueva lectura del proyecto con error de permisos. Por ello, aunque el informe de auditoría previo registra las migraciones Preview como aplicadas y el CI actual vuelve a aplicarlas con éxito en PostgreSQL efímero, esta sesión no pudo realizar una nueva lectura independiente del esquema remoto ni ejecutar una migración adicional.
+- No se rotaron secretos: no se pudo verificar desde el runtime de Vercel que las credenciales actuales funcionen y no se dispuso de credenciales nuevas emitidas por Supabase/Stripe. No se descifró ni revocó ninguna clave.
+- El endpoint Stripe TEST `we_1UW49tPOVrgZ5y4yxRHYtow8` permanece deshabilitado según el informe de validación previo; no se ha intentado enviar eventos externos ni debilitar la protección del Preview.
+
+## Bloqueos para cierre de fase
+
+1. Restablecer la autorización de lectura/escritura de Supabase para el proyecto Preview exacto `hdpikaqxeadqmckmmjfh`; validar migraciones aplicadas, grants, políticas y advisors en remoto.
+2. Resolver la discrepancia regional Vercel `iad1` / Supabase `eu-central-1` mediante una decisión de arquitectura que no cambie producción por accidente.
+3. Habilitar un método de acceso aprobado para validar runtime y webhook externo sin quitar Deployment Protection.
+4. Emitir y probar claves nuevas de Preview desde los paneles oficiales; sólo entonces rotar una por una, con solapamiento, comprobación posterior y rollback.
+5. Definir el alcance comercial del desarrollo web y de los planes, en especial Enterprise, y cerrar el análisis fiscal/jurídico antes de abrir Checkout.
