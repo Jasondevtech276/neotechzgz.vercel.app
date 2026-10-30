@@ -6,7 +6,7 @@ This workflow is staged on branch `backup/secure-supabase-r2`. It is not active 
 
 Target database: the canonical application project `qkzmpxyefuqdhyxwfjcw` (EU-West-2), as identified in the repository security audit. Do not point this workflow at the legacy/alternate Supabase project without an explicit review.
 
-Storage target: private Cloudflare R2 bucket `neotechzgz-db-backups` (WEUR, Standard). The R2 management API currently reports the managed `r2.dev` domain disabled and no custom domains. No backup objects have been uploaded by this workflow.
+Default storage target: private Cloudflare R2 bucket `neotechzgz-db-backups` (WEUR, Standard). The R2 management API currently reports the managed `r2.dev` domain disabled and no custom domains. No backup objects have been uploaded by this workflow. The workflow also accepts Backblaze B2 as an S3-compatible alternative if R2 billing conditions are unsuitable.
 
 ## What it does
 
@@ -29,25 +29,28 @@ Create these **Actions Variables**:
 |---|---|
 | `SUPABASE_DB_HOST` | Hostname shown for the project's **Session pooler** in Supabase Connect |
 | `SUPABASE_DB_USER` | Session pooler username shown by Supabase (usually includes the project reference) |
-| `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_BUCKET` | `neotechzgz-db-backups` |
+| `S3_ENDPOINT` | R2: `https://<account-id>.r2.cloudflarestorage.com`; B2: the S3 endpoint shown in the B2 bucket settings |
+| `S3_REGION` | R2: `auto`; B2: the region code for the bucket |
+| `S3_BUCKET` | R2: `neotechzgz-db-backups`; B2: the private bucket you create there |
 
 Create these **Actions Secrets**:
 
 | Secret | Value |
 |---|---|
 | `SUPABASE_DB_PASSWORD` | Database password for the canonical Supabase project |
-| `R2_ACCESS_KEY_ID` | R2 S3 access key ID |
-| `R2_SECRET_ACCESS_KEY` | R2 S3 secret access key |
+| `S3_ACCESS_KEY_ID` | Provider-issued S3 access key ID |
+| `S3_SECRET_ACCESS_KEY` | Provider-issued S3 secret access key |
 | `RESTIC_PASSWORD` | Unique, high-entropy Restic repository password |
 
 Never put these values in Git, issue comments, workflow YAML, Vercel public variables, or chat.
 
-## Cloudflare credential policy
+## Storage credential policy
 
-Create an R2 S3 API token in the Cloudflare Dashboard with **Object Read & Write** permission scoped only to `neotechzgz-db-backups`. Do not use a global Cloudflare API token or account-wide administrator token. The Restic retention step requires deletion permission in this one bucket.
+For Cloudflare R2, create an R2 S3 API token with **Object Read & Write** permission scoped only to `neotechzgz-db-backups`. Do not use a global Cloudflare API token or account-wide administrator token.
 
-Keep the bucket private. Do not enable the `r2.dev` public endpoint or attach a public custom domain. Preserve the independent Restic password outside GitHub and Cloudflare; losing it makes the encrypted repository unrecoverable.
+For Backblaze B2, create a private bucket and an application key restricted to that bucket with the minimum read/write/delete permissions required by Restic retention. Backblaze documents 10 GB of free B2 storage and says no billing method is required to start exploring the service; verify current account terms before relying on this allowance.
+
+Keep the bucket private. For R2, do not enable the `r2.dev` public endpoint or attach a public custom domain. Preserve the independent Restic password outside GitHub and the storage provider; losing it makes the encrypted repository unrecoverable.
 
 ## Supabase connection policy
 
@@ -74,8 +77,8 @@ Example manual recovery outline:
 - `pg_dump` captures PostgreSQL database objects and data, including schema content available to the database role. It does not copy the actual binary objects stored in Supabase Storage; those require a separate object-storage export.
 - Project-level Auth configuration, Edge Function source/deployment configuration, secrets, DNS, Vercel configuration and GitHub secrets are not included in the database dump.
 - Supabase Free does not provide its own downloadable automatic database backups. This external workflow is the compensating control.
-- The workflow uses GitHub-hosted runners and Cloudflare R2. The repository is public, so the workflow source is public; secret values remain in GitHub Actions Secrets. Only authorized repository writers can trigger workflows.
-- R2 includes a free monthly allowance, not an unconditional guarantee of zero charges. Monitor usage and configure billing alerts/spend controls where available. Do not exceed the free allowance.
+- The workflow uses GitHub-hosted runners and either Cloudflare R2 or Backblaze B2. The repository is public, so the workflow source is public; secret values remain in GitHub Actions Secrets. Only authorized repository writers can trigger workflows.
+- R2 includes a free monthly allowance, not an unconditional guarantee of zero charges. Backblaze B2 advertises 10 GB free and no billing method required to start, but the provider is proprietary and its free terms can change. Monitor usage and do not exceed the applicable allowance.
 
 ## Connector capabilities and boundaries
 
