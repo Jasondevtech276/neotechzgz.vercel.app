@@ -44,7 +44,9 @@ Set these values in the Worker environment using the Cloudflare Dashboard or a s
 Set these non-secret variables:
 - `GITHUB_APP_ID`: GitHub App ID.
 - `GITHUB_INSTALLATION_ID`: installation ID for the single repository.
+- `ALLOWED_SECRET_NAMES`: comma-separated exact allowlist of secret names (empty by default).
 - `ENABLE_TEST_SECRET_PROBE`: `true` only during the controlled probe test; reset to `false` afterwards.
+- `ENABLE_PRODUCTION_SECRET_OPS`: keep `false` until the bridge and probe are independently validated.
 
 The private ChatGPT plugin uses API-key/Bearer authentication. The bearer credential must be entered through the plugin's supported connection/authentication UI, not in chat or in `mcp.json`.
 
