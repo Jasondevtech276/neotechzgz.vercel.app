@@ -63,6 +63,7 @@ Estos datos son referencias, no equivalencias exactas de alcance. Los importes p
 - Destino: alias de la rama audit `/api/stripe/webhook`
 - Eventos: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`.
 - Se añadió un `STRIPE_WEBHOOK_SECRET` nuevo, sensible y limitado a Preview + rama audit. No sustituye ni modifica el secreto Preview global, ni los secretos Production/Development.
+- Endpoint `we_1UW49tPOVrgZ5y4yxRHYtow8` quedó **disabled** después de crearlo: la protección del deployment Preview impide certificar una entrega externa segura sin un método de acceso aprobado. No se ha debilitado esa protección.
 - No se ha expuesto ni registrado el signing secret.
 - La cuenta Stripe Live no apareció entre las cuentas accesibles al conector en esta sesión; no se intentó operar sobre ella.
 
