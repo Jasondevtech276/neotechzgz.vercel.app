@@ -76,13 +76,38 @@ jobs:
               --file="/backup/neotechzgz-${GITHUB_RUN_ID}.dump"
           test -s "$RUNNER_TEMP/db-backup/neotechzgz-${GITHUB_RUN_ID}.dump"
 
-      - name: Initialize encrypted repository if needed
+      - name: Install AWS CLI for safe bucket-state detection
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends awscli
+
+      - name: Initialize encrypted repository only when bucket is empty
         shell: bash
         run: |
           set -euo pipefail
-          if ! restic cat config >/dev/null 2>&1; then
-            restic init
+
+          if restic cat config >/dev/null 2>&1; then
+            echo "Existing Restic repository detected."
+            exit 0
           fi
+
+          echo "Restic config unavailable; checking the bucket before any initialization."
+          OBJECT_COUNT="$(aws s3api list-objects-v2 \
+            --bucket "$S3_BUCKET" \
+            --max-keys 1 \
+            --endpoint-url "$S3_ENDPOINT" \
+            --region "$S3_REGION" \
+            --query 'length(Contents || `[]`)' \
+            --output text)"
+
+          if [[ "$OBJECT_COUNT" != "0" ]]; then
+            echo "::error::Bucket is not empty but Restic config is unavailable. Refusing to initialize or overwrite anything."
+            exit 1
+          fi
+
+          echo "Dedicated bucket is empty; initializing the encrypted Restic repository."
+          restic init
 
       - name: Upload encrypted backup
         shell: bash
