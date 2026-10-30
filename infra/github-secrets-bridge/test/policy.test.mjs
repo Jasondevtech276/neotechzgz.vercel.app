@@ -4,13 +4,21 @@ import {
   PROBE_SECRET_NAME,
   constantTimeEqual,
   isAllowedProbeName,
+  isAllowedProductionName,
   parseBearer,
 } from "../src/policy.mjs";
 
-test("only the fixed reserved probe secret is allowed", () => {
+test("only the fixed reserved probe secret is allowed for the probe", () => {
   assert.equal(isAllowedProbeName(PROBE_SECRET_NAME), true);
   assert.equal(isAllowedProbeName("SUPABASE_DB_PASSWORD"), false);
   assert.equal(isAllowedProbeName("NEOTECHZGZ_BRIDGE_PROBE_OTHER"), false);
+});
+
+test("production names must match the exact configured allowlist", () => {
+  const allowlist = new Set(["SUPABASE_DB_PASSWORD", "S3_ACCESS_KEY_ID"]);
+  assert.equal(isAllowedProductionName("SUPABASE_DB_PASSWORD", allowlist), true);
+  assert.equal(isAllowedProductionName("GITHUB_TOKEN", allowlist), false);
+  assert.equal(isAllowedProductionName("SUPABASE_DB_PASSWORD", new Set()), false);
 });
 
 test("bearer parser rejects malformed and short credentials", () => {
