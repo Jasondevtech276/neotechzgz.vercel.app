@@ -38,7 +38,7 @@ Referencias públicas consultadas el 30-10-2026:
 - Consultoría IT: referencias españolas consultadas oscilan aproximadamente entre 45–90 €/h para consultoría informática, con niveles senior y especialización superiores. Los 75 €/h TEST están en el tramo medio-alto.
   - https://seisunos.com/services
   - https://redenet.es/blog/que-es-consultoria-informatica-pymes/
-  - https://www.frelancermap.com/blog/es/freelance-espana/
+  - https://www.freelancermap.com/blog/es/freelance-espana/
 - Análisis de sistemas: una tarifa pública de InfoTelecom Cloud recoge 90 €/h para sistemas/asesoría/analista; la tarifa pública de INECO 2026 recoge referencias de analista en torno a 50 €/h antes de complementos de desplazamiento. Los 85 €/h TEST son una posición especializada alta, justificable sólo con entregables, metodología y seniority definidos.
   - https://infotelecom.cloud/tarifas-vigentes/
   - https://www.ineco.com/ineco/sites/default/files/2026-03/2_Tarifas%20Ineco%202026_Resoluci%C3%B3n_vi.pdf
