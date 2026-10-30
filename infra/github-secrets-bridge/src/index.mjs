@@ -3,7 +3,6 @@ import {
   PROBE_SECRET_NAME,
   REPOSITORY,
   constantTimeEqual,
-  isAllowedProbeName,
   parseBearer,
 } from "./policy.mjs";
 
@@ -11,10 +10,16 @@ const GITHUB_API = "https://api.github.com";
 const API_VERSION = "2022-11-28";
 const MCP_VERSION = "2025-03-26";
 
-const json = (body, status = 200) =>
+const json = (body, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      ...extraHeaders,
+    },
   });
 
 function base64Url(bytes) {
@@ -97,10 +102,7 @@ async function putEncryptedSecret(token, name, value) {
   await githubFetch(`/repos/${REPOSITORY}/actions/secrets/${encodeURIComponent(name)}`, token, {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      encrypted_value: encryptedValue,
-      key_id: publicKey.key_id,
-    }),
+    body: JSON.stringify({ encrypted_value: encryptedValue, key_id: publicKey.key_id }),
   });
 }
 
@@ -131,7 +133,16 @@ function appConfigured(env) {
   return Boolean(env.GITHUB_APP_ID && env.GITHUB_APP_PRIVATE_KEY && env.GITHUB_INSTALLATION_ID);
 }
 
-function status(env) {
+function allowedNames(env) {
+  return new Set(
+    (env.ALLOWED_SECRET_NAMES ?? "")
+      .split(",")
+      .map((name) => name.trim())
+      .filter((name) => /^[A-Z_][A-Z0-9_]{0,99}$/.test(name)),
+  );
+}
+
+function status(env, requestUrl) {
   return {
     service: "neotechzgz-github-secrets-bridge",
     mode: "fail-closed",
@@ -139,8 +150,10 @@ function status(env) {
     api_token_configured: Boolean(env.BRIDGE_API_TOKEN),
     github_app_configured: appConfigured(env),
     test_probe_enabled: env.ENABLE_TEST_SECRET_PROBE === "true",
-    production_secret_mutations_enabled: false,
+    production_secret_mutations_enabled: env.ENABLE_PRODUCTION_SECRET_OPS === "true",
+    production_allowlist_size: allowedNames(env).size,
     secret_values_are_returned: false,
+    secret_entry_url: new URL("/secret-entry", requestUrl).toString(),
   };
 }
 
@@ -157,13 +170,13 @@ const toolDefinitions = [
   },
   {
     name: "test_secret_roundtrip",
-    description: "Creates a reserved harmless probe secret, verifies its metadata, then deletes it. Refuses to overwrite an existing probe. Requires explicit test-probe enablement.",
+    description: "Creates the reserved harmless probe secret, verifies its metadata, then deletes it. Refuses to overwrite an existing probe. Requires explicit test-probe enablement.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
 ];
 
-async function callTool(name, env) {
-  if (name === "bridge_status") return status(env);
+async function callTool(name, env, requestUrl) {
+  if (name === "bridge_status") return status(env, requestUrl);
   if (name === "list_secret_names") {
     if (!appConfigured(env)) throw new Error("GitHub App is not configured");
     const token = await installationToken(env);
@@ -190,7 +203,7 @@ async function callTool(name, env) {
       return { created: true, listed: visible, deleted: true, repository: REPOSITORY };
     } finally {
       if (created && !deleted) {
-        try { await deleteSecret(token, PROBE_SECRET_NAME); } catch { /* fail closed; never log secret data */ }
+        try { await deleteSecret(token, PROBE_SECRET_NAME); } catch { /* Never log secret material. */ }
       }
     }
   }
@@ -201,18 +214,127 @@ function rpcResult(id, result) {
   return json({ jsonrpc: "2.0", id, result });
 }
 
+function htmlEscape(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]);
+}
+
+function secretEntryPage(env) {
+  const names = [...allowedNames(env)].sort();
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const options = names.map((name) => `<option value="${htmlEscape(name)}"></option>`).join("");
+  const html = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEOTECHZGZ Secret Entry</title>
+<style>
+body{font:16px system-ui,sans-serif;max-width:42rem;margin:3rem auto;padding:0 1rem;color:#17202a}
+label{display:block;margin:1rem 0 .35rem;font-weight:600}input{box-sizing:border-box;width:100%;padding:.75rem;border:1px solid #89939e;border-radius:.4rem}
+button{margin-top:1rem;padding:.75rem 1rem;border:0;border-radius:.4rem;background:#17202a;color:white;font-weight:600}
+small{color:#52616b}#result{white-space:pre-wrap;margin-top:1rem}
+</style></head><body>
+<h1>GitHub Actions secret entry</h1>
+<p>Values entered here are sent directly to the bridge and encrypted for GitHub. They are not submitted to ChatGPT.</p>
+<p><strong>Repository:</strong> ${REPOSITORY}</p>
+<form id="secret-form" autocomplete="off">
+<label for="token">Bridge bearer token</label><input id="token" type="password" required autocomplete="off">
+<label for="name">Allowed secret name</label><input id="name" list="allowed" required pattern="[A-Z_][A-Z0-9_]{0,99}"><datalist id="allowed">${options}</datalist>
+<label for="value">Secret value</label><input id="value" type="password" required autocomplete="new-password">
+<small>Secret values are never displayed again or returned by this service.</small>
+<button type="submit">Save / replace secret</button>
+</form>
+<hr>
+<form id="delete-form" autocomplete="off">
+<h2>Delete a secret</h2>
+<label for="delete-token">Bridge bearer token</label><input id="delete-token" type="password" required autocomplete="off">
+<label for="delete-name">Allowed secret name</label><input id="delete-name" list="allowed" required pattern="[A-Z_][A-Z0-9_]{0,99}">
+<label for="confirm-name">Type the same name to confirm deletion</label><input id="confirm-name" required>
+<button type="submit">Delete secret</button>
+</form>
+<div id="result" role="status" aria-live="polite"></div>
+<script nonce="${nonce}">
+const result=document.getElementById("result");
+document.getElementById("secret-form").addEventListener("submit",async(e)=>{
+ e.preventDefault();result.textContent="Saving…";
+ const token=document.getElementById("token").value;
+ const name=document.getElementById("name").value;
+ const value=document.getElementById("value").value;
+ try{
+  const r=await fetch("/api/secret",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},body:JSON.stringify({name,value})});
+  const d=await r.json();if(!r.ok)throw new Error(d.error||"Request failed");
+  result.textContent="Saved: "+name;document.getElementById("value").value="";
+ }catch(err){result.textContent="Error: "+err.message}
+});
+document.getElementById("delete-form").addEventListener("submit",async(e)=>{
+ e.preventDefault();result.textContent="Deleting…";
+ const token=document.getElementById("delete-token").value;
+ const name=document.getElementById("delete-name").value;
+ const confirmName=document.getElementById("confirm-name").value;
+ try{
+  const r=await fetch("/api/secret/delete",{method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+token},body:JSON.stringify({name,confirmName})});
+  const d=await r.json();if(!r.ok)throw new Error(d.error||"Request failed");
+  result.textContent="Deleted: "+name;document.getElementById("delete-form").reset();
+ }catch(err){result.textContent="Error: "+err.message}
+});
+</script></body></html>`;
+  return new Response(html, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+      "referrer-policy": "no-referrer",
+      "content-security-policy": `default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'`,
+    },
+  });
+}
+
+async function handleSecretWrite(request, env, isDelete) {
+  if (env.ENABLE_PRODUCTION_SECRET_OPS !== "true") return json({ error: "Production secret operations are disabled" }, 403);
+  if (!appConfigured(env)) return json({ error: "GitHub App is not configured" }, 503);
+  const size = Number(request.headers.get("content-length") ?? "0");
+  if (size > 65_536) return json({ error: "Request too large" }, 413);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const { name, value, confirmName } = body ?? {};
+  if (typeof name !== "string" || !allowedNames(env).has(name)) return json({ error: "Secret name is not in the configured allowlist" }, 403);
+  if (isDelete && confirmName !== name) return json({ error: "Deletion confirmation does not match" }, 400);
+  if (!isDelete && (typeof value !== "string" || value.length < 1 || value.length > 60_000)) {
+    return json({ error: "Secret value must contain 1 to 60000 characters" }, 400);
+  }
+  const token = await installationToken(env);
+  if (isDelete) {
+    await deleteSecret(token, name);
+    return json({ ok: true, operation: "deleted", name });
+  }
+  await putEncryptedSecret(token, name, value);
+  return json({ ok: true, operation: "saved", name });
+}
+
 export default {
   async fetch(request, env) {
-    if (request.method !== "POST" || new URL(request.url).pathname !== "/mcp") {
-      return json({ error: "Not found" }, 404);
+    const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === "/secret-entry") {
+      return secretEntryPage(env);
     }
 
-    const expected = env.BRIDGE_API_TOKEN;
+    if (request.method === "POST" && (url.pathname === "/api/secret" || url.pathname === "/api/secret/delete")) {
+      const supplied = parseBearer(request.headers.get("authorization"));
+      if (!env.BRIDGE_API_TOKEN || !supplied || !constantTimeEqual(supplied, env.BRIDGE_API_TOKEN)) {
+        return json({ error: "Unauthorized" }, 401);
+      }
+      try {
+        return await handleSecretWrite(request, env, url.pathname.endsWith("/delete"));
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : "Operation failed" }, 502);
+      }
+    }
+
+    if (request.method !== "POST" || url.pathname !== "/mcp") return json({ error: "Not found" }, 404);
     const supplied = parseBearer(request.headers.get("authorization"));
-    if (!expected || !supplied || !constantTimeEqual(supplied, expected)) {
+    if (!env.BRIDGE_API_TOKEN || !supplied || !constantTimeEqual(supplied, env.BRIDGE_API_TOKEN)) {
       return json({ error: "Unauthorized" }, 401);
     }
-
     const contentLength = Number(request.headers.get("content-length") ?? "0");
     if (contentLength > 16_384) return json({ error: "Request too large" }, 413);
 
@@ -235,13 +357,9 @@ export default {
     if (message.method === "ping") return rpcResult(message.id, {});
     if (message.method === "tools/list") return rpcResult(message.id, { tools: toolDefinitions });
     if (message.method === "tools/call") {
-      const name = message.params?.name;
       try {
-        const result = await callTool(name, env);
-        return rpcResult(message.id, {
-          content: [{ type: "text", text: JSON.stringify(result) }],
-          isError: false,
-        });
+        const result = await callTool(message.params?.name, env, request.url);
+        return rpcResult(message.id, { content: [{ type: "text", text: JSON.stringify(result) }], isError: false });
       } catch (error) {
         return rpcResult(message.id, {
           content: [{ type: "text", text: error instanceof Error ? error.message : "Operation failed" }],
