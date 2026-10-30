@@ -15,10 +15,10 @@ The Worker is designed to expose a private, authenticated MCP endpoint for the f
 - Secret names and timestamps may be listed; secret values are never read or returned.
 - The only write/delete probe in this release is the fixed name `NEOTECHZGZ_BRIDGE_PROBE`.
 - The probe refuses to overwrite an existing name, verifies metadata visibility, deletes the probe, and verifies absence.
-- Production secret creation, update, and deletion tools are deliberately absent from the MCP surface.
+- Production secret values are never accepted by MCP tools. They can only be entered through the separate browser UI, which is disabled unless `ENABLE_PRODUCTION_SECRET_OPS=true` and the name is in `ALLOWED_SECRET_NAMES`.
 - No credentials are committed to Git, plugin files, workflow logs, or this document.
 
-## GitHub App prerequisites
+## User-mediated secret entry\n\nThe Worker serves a dedicated `/secret-entry` page. The user enters the bridge bearer token and secret value directly in the browser; the value is posted straight to the Worker and encrypted with GitHub's repository public key. It is not passed through an MCP tool, ChatGPT message, plugin configuration, or logs. The UI supports save/replace and delete with exact-name confirmation. The Worker rejects every name outside `ALLOWED_SECRET_NAMES`. The production operations flag is false by default and must remain false until the GitHub App and connection are independently verified.\n\n## GitHub App prerequisites
 
 Create a GitHub App and install it only on `Jasondevtech276/neotechzgz.vercel.app`.
 
