@@ -29,8 +29,8 @@ jobs:
       S3_BUCKET: ${{ vars.S3_BUCKET }}
       RESTIC_REPOSITORY: s3:${{ vars.S3_ENDPOINT }}/${{ vars.S3_BUCKET }}
       RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ${{ vars.S3_REGION }}
 
     steps:
