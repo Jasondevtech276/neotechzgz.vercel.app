@@ -2,7 +2,7 @@
 
 ## Deployment state
 
-This implementation is staged on branch `feat/github-secrets-bridge`. It is not deployed and has no access to GitHub secrets yet.
+This implementation is staged on branch `feat/github-secrets-bridge`. It is not deployed and has no access to GitHub secrets yet. Cloudflare's Workers Builds repository-connection API currently returns HTTP 404 stating that the account is disconnected from GitHub; connect the Cloudflare account to GitHub in the Cloudflare Dashboard before creating the build connection.
 
 The Worker is designed to expose a private, authenticated MCP endpoint for the fixed repository `Jasondevtech276/neotechzgz.vercel.app`. It does not proxy arbitrary GitHub API paths and does not return secret values.
 
@@ -13,7 +13,7 @@ The Worker is designed to expose a private, authenticated MCP endpoint for the f
 - The GitHub App installation token is short-lived and created server-side from the App private key.
 - GitHub Actions secret values are encrypted with the repository's GitHub public key using libsodium sealed boxes before the REST API call.
 - Secret names and timestamps may be listed; secret values are never read or returned.
-- The only write/delete probe in this release is the fixed name `NEOTECHZGZ_BRIDGE_PROBE`.
+- The only MCP-triggered write/delete probe is the fixed name `NEOTECHZGZ_BRIDGE_PROBE`; production values are never accepted as MCP arguments.
 - The probe refuses to overwrite an existing name, verifies metadata visibility, deletes the probe, and verifies absence.
 - Production secret values are never accepted by MCP tools. They can only be entered through the separate browser UI, which is disabled unless `ENABLE_PRODUCTION_SECRET_OPS=true` and the name is in `ALLOWED_SECRET_NAMES`.
 - No credentials are committed to Git, plugin files, workflow logs, or this document.
@@ -28,7 +28,7 @@ Create a GitHub App and install it only on `Jasondevtech276/neotechzgz.vercel.ap
 
 Grant only the repository permissions required by the Actions Secrets REST API:
 - Repository metadata: read-only.
-- Actions secrets: read/write (confirm the exact permission label shown by GitHub's App registration UI and the current REST API documentation).
+- Repository permission **Secrets: read/write** (the GitHub App permission used by the Actions Secrets REST API).
 
 Do not grant Contents, Administration, Workflows, Deployments, or organization-wide access. Generate an App private key and retain it securely.
 
@@ -70,4 +70,4 @@ The private ChatGPT plugin uses API-key/Bearer authentication. The bearer creden
 - [ ] Probe is absent after test and test mode is disabled.
 - [ ] No production secret mutation capability is enabled.
 
-**Current decision: HOLD.** This bridge release intentionally does not expose production secret writes or deletes. Do not use it to rotate credentials until a separate reviewed change implements the user-mediated secret-entry flow and production allowlist.
+**Current decision: HOLD.** Production secret mutations are implemented only through the separate browser UI and remain disabled by default. Do not enable `ENABLE_PRODUCTION_SECRET_OPS` until the GitHub App, Worker authentication, allowlist, and harmless probe have passed independent verification.
