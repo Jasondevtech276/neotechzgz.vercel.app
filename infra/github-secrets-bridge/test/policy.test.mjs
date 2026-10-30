@@ -5,7 +5,7 @@ import {
   constantTimeEqual,
   isAllowedProbeName,
   isAllowedProductionName,
-  parseBearer,
+  parseBearer,\n  pemToPkcs8Bytes,
 } from "../src/policy.mjs";
 
 test("only the fixed reserved probe secret is allowed for the probe", () => {
@@ -32,4 +32,17 @@ test("constant-time comparison accepts equal values and rejects different values
   assert.equal(constantTimeEqual("a".repeat(40), "a".repeat(40)), true);
   assert.equal(constantTimeEqual("a".repeat(40), "b".repeat(40)), false);
   assert.equal(constantTimeEqual("short", "shorter"), false);
+});
+
+test("PKCS#1 RSA PEM is wrapped into PKCS#8 for WebCrypto", () => {
+  const raw = Uint8Array.of(1, 2, 3, 4);
+  const pem = "-----BEGIN RSA PRIVATE KEY-----\\nAQIDBA==\\n-----END RSA PRIVATE KEY-----";
+  const wrapped = pemToPkcs8Bytes(pem);
+  assert.equal(wrapped[0], 0x30);
+  assert.ok(wrapped.length > raw.length);
+});
+
+test("PKCS#8 PEM is decoded without changing its DER bytes", () => {
+  const pem = "-----BEGIN PRIVATE KEY-----\\nAQIDBA==\\n-----END PRIVATE KEY-----";
+  assert.deepEqual([...pemToPkcs8Bytes(pem)], [1, 2, 3, 4]);
 });
