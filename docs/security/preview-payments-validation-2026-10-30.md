@@ -72,6 +72,7 @@ Estos datos son referencias, no equivalencias exactas de alcance. Los importes p
 - `CHECKOUT_ENABLED`, `STRIPE_AUTOMATIC_TAX_ENABLED` y `STRIPE_ADAPTIVE_PRICING_ENABLED` no se han habilitado en Preview. La ruta de Checkout continúa fail-closed (503) por diseño mientras falten las validaciones fiscales/contractuales.
 - No se ha completado una compra alojada end-to-end ni una entrega real de webhook desde Stripe al runtime de Preview. La protección del deployment no se ha debilitado para permitir tráfico externo.
 - La autenticación real desde el runtime Vercel con los secretos actuales no se ha demostrado; los secretos no se descifraron.
+- El deployment Preview reporta región `iad1` mientras Supabase Preview está en `eu-central-1`. Es una diferencia de residencia/latencia que debe resolverse y verificarse con una configuración regional explícita antes de una decisión de producción; no se ha cambiado la región en esta fase.
 - No se han rotado ni revocado credenciales existentes. La rotación queda en fase de preparación hasta disponer de claves nuevas emitidas por los proveedores y una ventana de sustitución/rollback.
 - No se han modificado webhooks, precios, productos ni credenciales de Live.
 
