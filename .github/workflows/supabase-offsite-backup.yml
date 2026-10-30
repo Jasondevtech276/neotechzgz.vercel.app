@@ -24,27 +24,35 @@ jobs:
       PGDATABASE: postgres
       PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       PGSSLMODE: require
-      R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
-      R2_BUCKET: ${{ vars.R2_BUCKET }}
-      RESTIC_REPOSITORY: s3:https://${{ vars.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com/${{ vars.R2_BUCKET }}
+      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+      S3_REGION: ${{ vars.S3_REGION }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      RESTIC_REPOSITORY: s3:${{ vars.S3_ENDPOINT }}/${{ vars.S3_BUCKET }}
       RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: auto
+      AWS_DEFAULT_REGION: ${{ vars.S3_REGION }}
 
     steps:
       - name: Validate configuration
         shell: bash
         run: |
           set -euo pipefail
-          for name in PGHOST PGUSER PGPASSWORD R2_ACCOUNT_ID R2_BUCKET RESTIC_REPOSITORY RESTIC_PASSWORD AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+          for name in PGHOST PGUSER PGPASSWORD S3_ENDPOINT S3_REGION S3_BUCKET RESTIC_REPOSITORY RESTIC_PASSWORD AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
             if [[ -z "${!name:-}" ]]; then
               echo "::error::Required backup configuration is missing: $name"
               exit 1
             fi
           done
-          if [[ "$R2_BUCKET" != "neotechzgz-db-backups" ]]; then
-            echo "::error::Unexpected R2 bucket. Refusing to write outside the approved backup bucket."
+          case "$S3_ENDPOINT" in
+            https://*.r2.cloudflarestorage.com|https://s3.*.backblazeb2.com) ;;
+            *)
+              echo "::error::Unsupported S3 endpoint. Only Cloudflare R2 and Backblaze B2 are allowed."
+              exit 1
+              ;;
+          esac
+          if [[ "$S3_ENDPOINT" == */ ]]; then
+            echo "::error::S3_ENDPOINT must not end with a slash."
             exit 1
           fi
 
