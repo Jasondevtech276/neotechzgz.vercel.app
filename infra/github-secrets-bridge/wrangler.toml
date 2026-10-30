@@ -1,0 +1,9 @@
+name = "neotechzgz-github-secrets-bridge"
+main = "src/index.mjs"
+compatibility_date = "2026-10-30"
+workers_dev = true
+minify = true
+
+[vars]
+GITHUB_REPOSITORY = "Jasondevtech276/neotechzgz.vercel.app"
+ENABLE_TEST_SECRET_PROBE = "false"
