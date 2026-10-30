@@ -1,5 +1,6 @@
 import sodium from "libsodium-wrappers-sumo";
 import {
+  pemToPkcs8Bytes,
   PROBE_SECRET_NAME,
   REPOSITORY,
   constantTimeEqual,
@@ -26,12 +27,6 @@ function base64Url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-}
-
-function pemToBytes(pem) {
-  const encoded = pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
-  const binary = atob(encoded);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
 async function createAppJwt(env) {
@@ -142,7 +137,7 @@ function allowedNames(env) {
   );
 }
 
-function status(env, requestUrl) {
+function status(env) {
   return {
     service: "neotechzgz-github-secrets-bridge",
     mode: "fail-closed",
@@ -153,7 +148,7 @@ function status(env, requestUrl) {
     production_secret_mutations_enabled: env.ENABLE_PRODUCTION_SECRET_OPS === "true",
     production_allowlist_size: allowedNames(env).size,
     secret_values_are_returned: false,
-    secret_entry_url: new URL("/secret-entry", requestUrl).toString(),
+    secret_entry_path: "/secret-entry",
   };
 }
 
@@ -358,7 +353,7 @@ export default {
     if (message.method === "tools/list") return rpcResult(message.id, { tools: toolDefinitions });
     if (message.method === "tools/call") {
       try {
-        const result = await callTool(message.params?.name, env, request.url);
+        const result = await callTool(message.params?.name, env);
         return rpcResult(message.id, { content: [{ type: "text", text: JSON.stringify(result) }], isError: false });
       } catch (error) {
         return rpcResult(message.id, {
