@@ -170,8 +170,8 @@ const toolDefinitions = [
   },
 ];
 
-async function callTool(name, env, requestUrl) {
-  if (name === "bridge_status") return status(env, requestUrl);
+async function callTool(name, env) {
+  if (name === "bridge_status") return status(env);
   if (name === "list_secret_names") {
     if (!appConfigured(env)) throw new Error("GitHub App is not configured");
     const token = await installationToken(env);
