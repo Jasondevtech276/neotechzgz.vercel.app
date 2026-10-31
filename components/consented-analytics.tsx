@@ -1,12 +1,32 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 const CONSENT_COOKIE = 'neotech_cookie_consent'
 const GA_ID = 'G-M0DGWW97PL'
 const META_PIXEL_ID = '1232991321352210'
+const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN
+const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST
+
+type PostHogClient = { init: (token: string, options: Record<string, unknown>) => void; capture: (event: string, properties?: Record<string, unknown>) => void }
+declare global { interface Window { posthog?: PostHogClient } }
 
 type Consent = 'all' | 'essential' | 'analytics' | 'marketing' | null
+
+
+function getPostHog(): PostHogClient | undefined {
+  return (window as unknown as { posthog?: PostHogClient }).posthog
+}
+
+function initializePostHog() {
+  if (!POSTHOG_KEY || !POSTHOG_HOST || getPostHog()) return
+  const bootstrap = document.createElement('script')
+  bootstrap.dataset.neotechPosthog = 'true'
+  bootstrap.text = `!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="init capture identify alias people.set people.set_once people.unset people.increment people.append people.remove people.group people.resetGroups setPersonProperties setPersonPropertiesForFlags resetGroups setGroupPropertiesForFlags startSessionRecording stopSessionRecording sessionRecordingStarted captureException".split(" ");for(n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);`
+  document.head.appendChild(bootstrap)
+  getPostHog()?.init(POSTHOG_KEY, { api_host: POSTHOG_HOST, autocapture: false, capture_pageview: false, capture_pageleave: false, disable_session_recording: true, persistence: 'memory', person_profiles: 'identified_only' })
+}
 
 function readConsent(): Consent {
   const value = document.cookie.split('; ').find((part) => part.startsWith(`${CONSENT_COOKIE}=`))?.split('=')[1]
@@ -15,6 +35,7 @@ function readConsent(): Consent {
 
 export function ConsentedAnalytics() {
   const [consent, setConsent] = useState<Consent>(null)
+  const pathname = usePathname()
 
   useEffect(() => {
     const sync = () => setConsent(readConsent())
@@ -44,6 +65,8 @@ export function ConsentedAnalytics() {
       scripts.push(config)
     }
 
+    if (analyticsEnabled) initializePostHog()
+
     if (marketingEnabled && !document.querySelector('[data-neotech-meta]')) {
       const meta = document.createElement('script')
       meta.dataset.neotechMeta = 'true'
@@ -58,6 +81,13 @@ export function ConsentedAnalytics() {
       for (const script of scripts) script.remove()
     }
   }, [consent])
+
+  useEffect(() => {
+    if ((consent === 'all' || consent === 'analytics') && POSTHOG_KEY && POSTHOG_HOST && getPostHog()) {
+      // Exclude query strings and fragments to avoid capturing tokens or personal data in URLs.
+      getPostHog()?.capture('$pageview', { $current_url: window.location.origin + pathname })
+    }
+  }, [consent, pathname])
 
   return null
 }
