@@ -4,18 +4,17 @@ export default function LegalPage() {
       <a href="/" className="account-brand"><span className="brand-mark">N</span><span>NeoTech <em>ZGZ</em></span></a>
       <p className="eyebrow">INFORMACIÓN LEGAL Y PRIVACIDAD</p>
       <h1>Tu tecnología, con reglas claras.</h1>
-      <p className="legal-lede">Información sobre el titular, la privacidad, las cookies y la contratación de servicios de NeoTech ZGZ. Última revisión: 17 de octubre de 2026.</p>
+      <p className="legal-lede">Información sobre el titular, la privacidad, las cookies y la contratación de servicios de NeoTech ZGZ. Última revisión: 25 de octubre de 2026.</p>
 
       <div className="legal-grid">
         <section id="aviso-legal">
           <h2>1. Aviso legal e identificación</h2>
           <p><strong>Nombre comercial:</strong> NeoTech ZGZ.<br />
             <strong>Titular y responsable:</strong> Mohammed Jassem Larbi, persona física.<br />
-            <strong>NIF/NIE:</strong> X3091974S.<br />
-            <strong>Domicilio de contacto publicado:</strong> Calle Mundir I, Zaragoza, Aragón, España.<br />
+            <strong>Ubicación orientativa:</strong> Zaragoza, Aragón, España 50001.<br />
             <strong>Correo de contacto y privacidad:</strong> <a href="mailto:larbimhed260796@gmail.com">larbimhed260796@gmail.com</a>.<br />
             <strong>Actividad:</strong> soporte informático presencial y remoto, desarrollo web y servicios tecnológicos.<br /><br />
-            El domicilio se reproduce conforme a los datos facilitados por el titular. La suficiencia legal del domicilio de contacto publicado y la situación censal/fiscal deben verificarse antes de publicar definitivamente. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
+            La ubicación mostrada es orientativa y no revela el domicilio particular del titular. Antes de habilitar la contratación se facilitará la dirección legal exigible conforme a la normativa aplicable. No se declara aquí un registro mercantil, colegio profesional ni autorización que no se haya acreditado.
           </p>
         </section>
 
@@ -90,7 +89,7 @@ export default function LegalPage() {
           <p>Esta información puede actualizarse por cambios legales, técnicos o de servicios. Se publicará la versión vigente con su fecha de revisión. Si un cambio exige consentimiento nuevo o información individual, se actuará de acuerdo con la normativa aplicable.</p>
         </section>
       </div>
-      <div className="inner-disclaimer">Esta página es una base informativa adaptada a los datos facilitados. Antes de publicación definitiva deben verificarse la suficiencia legal del domicilio de contacto publicado, la situación censal y fiscal, los proveedores y sus contratos, las transferencias internacionales, el inventario real de cookies y los flujos de contratación. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
+      <div className="inner-disclaimer">Esta página es una base informativa. La contratación permanece pausada hasta completar la revisión de datos legales, fiscalidad, proveedores, transferencias internacionales, cookies y condiciones contractuales. La publicación de una política por sí sola no acredita el cumplimiento integral del RGPD, la LOPDGDD, la LSSI-CE ni la normativa de consumo.</div>
       <p><a href="/" className="button button-primary">Volver a la web</a></p>
     </main>
   );
