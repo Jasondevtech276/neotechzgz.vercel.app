@@ -1,0 +1,13 @@
+{
+  "name": "neotechzgz-github-secrets-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/index.mjs && node --check src/policy.mjs"
+  },
+  "dependencies": {
+    "libsodium-wrappers-sumo": "0.7.15"
+  }
+}
