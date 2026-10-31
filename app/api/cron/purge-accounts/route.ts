@@ -111,7 +111,7 @@ export async function GET(request: Request) {
 
       // Never erase an account if subscriptions cannot be checked/cancelled safely.
       if (subscriptionIds.some(Boolean) || customerIds.some(Boolean)) {
-        const secret = process.env.STRIPE_SECRET_KEY ?? process.env.STRIPE_MCP_KEY
+        const secret = process.env.STRIPE_SECRET_KEY
         if (!secret) throw new Error('Stripe is not configured; account deletion deferred')
         await cancelOutstandingSubscriptions(getStripe(), subscriptionIds, customerIds)
       }

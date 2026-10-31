@@ -66,11 +66,11 @@ export function CookieConsent() {
           <div>
             <p className="eyebrow">COOKIES Y PRIVACIDAD</p>
             <strong>Elige qué tecnologías permites.</strong>
-            <p>Las cookies necesarias están siempre activas. La analítica y la publicidad opcionales permanecen desactivadas hasta que las autorices.</p>
+            <p>Las cookies necesarias están siempre activas. Google Analytics y PostHog para analítica, y Meta Pixel para marketing, permanecen desactivados hasta que autorices cada categoría.</p>
             <a href="/legal#cookies">Leer política de cookies</a>
             {configuring && (
               <div className="cookie-category-settings">
-                <label><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /> Analítica (Google Analytics)</label>
+                <label><input type="checkbox" checked={analytics} onChange={(event) => setAnalytics(event.target.checked)} /> Analítica (Google Analytics y PostHog)</label>
                 <label><input type="checkbox" checked={marketing} onChange={(event) => setMarketing(event.target.checked)} /> Marketing (Meta Pixel)</label>
                 <p>Tu elección se recuerda durante seis meses. Puedes cambiarla desde Preferencias de cookies.</p>
               </div>

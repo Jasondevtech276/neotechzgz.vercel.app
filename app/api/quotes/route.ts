@@ -3,18 +3,10 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/emailjs'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { getProduct } from '@/lib/products'
+import { getStripe, getStripeMode } from '@/lib/stripe'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const serviceRates: Record<string, number> = {
-  'Soporte Remoto': 55,
-  'Soporte Presencial': 75,
-  'Desarrollo Web': 950,
-  'Consultoría IT': 85,
-  'Análisis de Sistemas': 75,
-  'Plan STARTER': 99,
-  'Plan PROFESSIONAL': 179,
-  'Plan ENTERPRISE': 399,
-}
 const allowedServices = new Set([
   'Soporte Remoto',
   'Soporte Presencial',
@@ -52,20 +44,58 @@ export async function POST(request: Request) {
     const description = typeof body.description === 'string' ? body.description.trim() : null
     const isHourly = hourlyServices.has(service)
     const hours = isHourly ? Number(body.hours) : null
-    const budget = isHourly ? serviceRates[service] * Number(hours) : serviceRates[service]
 
     if (name.length < 2 || name.length > 120 || !emailPattern.test(email) || email.length > 254) {
       return NextResponse.json({ error: 'Datos de contacto no válidos' }, { status: 400 })
     }
     if (
       !allowedServices.has(service) ||
-      (isHourly && (!Number.isInteger(hours) || Number(hours) < 1 || Number(hours) > 1000)) ||
-      !Number.isFinite(budget) || budget < 0 || budget > 10000000
+      (isHourly && (!Number.isInteger(hours) || Number(hours) < 1 || Number(hours) > 1000))
     ) {
       return NextResponse.json({ error: 'Datos de solicitud no válidos' }, { status: 400 })
     }
     if ((company && company.length > 160) || (description && description.length > 5000)) {
       return NextResponse.json({ error: 'La solicitud supera el tamaño permitido' }, { status: 400 })
+    }
+
+    // Quotes use the same validated Stripe catalog as checkout. A missing or
+    // mismatched Price is recorded as unpriced (0) rather than a stale estimate.
+    const productIdByService: Record<string, string> = {
+      'Soporte Remoto': 'remote-support',
+      'Soporte Presencial': 'onsite-support',
+      'Desarrollo Web': 'web-development',
+      'Consultoría IT': 'it-consulting',
+      'Análisis de Sistemas': 'systems-analysis',
+      'Plan STARTER': 'starter',
+      'Plan PROFESSIONAL': 'professional',
+      'Plan ENTERPRISE': 'enterprise',
+    }
+    let budget = 0
+    const product = getProduct(productIdByService[service])
+    if (product?.stripePriceLookupKey) {
+      try {
+        const mode = getStripeMode()
+        const stripe = getStripe()
+        const priceList = await stripe.prices.list({ lookup_keys: [product.stripePriceLookupKey], active: true, limit: 2 })
+        const price = priceList.data.length === 1 ? priceList.data[0] : null
+        if (
+          price &&
+          price.active &&
+          price.lookup_key === product.stripePriceLookupKey &&
+          price.livemode === (mode === 'live') &&
+          price.currency === 'eur' &&
+          price.unit_amount != null &&
+          price.unit_amount > 0 &&
+          (product.mode === 'subscription' ? Boolean(price.recurring && price.recurring.interval === 'month' && price.recurring.interval_count === 1) : !price.recurring)
+        ) {
+          budget = isHourly ? (price.unit_amount / 100) * Number(hours) : price.unit_amount / 100
+        }
+      } catch {
+        budget = 0
+      }
+    }
+    if (!Number.isFinite(budget) || budget < 0 || budget > 10000000) {
+      return NextResponse.json({ error: 'Datos de solicitud no válidos' }, { status: 400 })
     }
 
     const { data: { user } } = await createServerClient().then(client => client.auth.getUser())
@@ -91,7 +121,7 @@ export async function POST(request: Request) {
       console.error('[v0] quote confirmation email failed', emailError)
     }
 
-    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification }, { status: 201 })
+    return NextResponse.json({ clientCode: data.client_code, status: data.status, notification, budget }, { status: 201 })
   } catch (error) {
     console.error('[v0] quote route failed', error)
     return NextResponse.json({ error: 'Solicitud no válida' }, { status: 400 })
