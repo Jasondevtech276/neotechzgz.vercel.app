@@ -6,6 +6,11 @@ updates:
       interval: weekly
       day: tuesday
     open-pull-requests-limit: 5
+    ignore:
+      # TypeScript 7 (native Go compiler) has no stable programmatic API until 7.1.
+      # Stay on the 6.0.x line; re-evaluate when 7.1 is released.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
