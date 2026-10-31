@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStripe } from '@/lib/stripe'
+import { getStripe, isStripeConfigured } from '@/lib/stripe'
+import { getSupabaseAdminConfig } from '@/lib/supabase/server-env'
 import type Stripe from 'stripe'
 import { timingSafeEqual } from 'node:crypto'
 
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
   }
 
-  if (!(process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL) || !(process.env.SUPABASE_SECRET_KEY ?? process.env.SERVICE_ROLE)) {
+  if (!getSupabaseAdminConfig()) {
     console.error('[account-retention] Supabase admin environment is not configured')
     return NextResponse.json({ error: 'Cron is not configured' }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
@@ -111,8 +112,7 @@ export async function GET(request: Request) {
 
       // Never erase an account if subscriptions cannot be checked/cancelled safely.
       if (subscriptionIds.some(Boolean) || customerIds.some(Boolean)) {
-        const secret = process.env.STRIPE_SECRET_KEY ?? process.env.STRIPE_MCP_KEY
-        if (!secret) throw new Error('Stripe is not configured; account deletion deferred')
+        if (!isStripeConfigured()) throw new Error('Stripe is not configured; account deletion deferred')
         await cancelOutstandingSubscriptions(getStripe(), subscriptionIds, customerIds)
       }
 
