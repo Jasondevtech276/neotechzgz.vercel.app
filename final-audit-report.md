@@ -10,7 +10,7 @@
 
 | # | Agent | Categoría | Resultado Principal |
 |---|-------|-----------|---------------------|
-| 1 | engineering-backend-architect | Engineering | Arquitectura completa Cliente→Vercel→Supabase→Stripe, arquitectura híbrida NTC/PAT |
+| 1 | engineering-backend-architect | Engineering | Arquitectura completa Cliente→Vercel→Supabase→Stripe, arquitectura híbrida NTC/
 | 2 | security-auditor | Security | Headers verificados, 5 prioridades hardening |
 | 3 | community-manager | Community | Estrategia engagement, FAQs, automatización Resend/Sentry/Linear |
 | 4 | project-manager | Management | Plan 6 fases, 22 milestones, dependencias PR #69/#74/#77 |
@@ -45,7 +45,7 @@
 ### 🔐 **Seguridad (6 files críticos)**
 - `/root/agency-agents/security-implementation/security-headers.js` - Middleware Express (HSTS, CSP, headers TEST/PRODUCTION)
 - `/root/agency-agents/security-implementation/rate-limit.js` - Rate limiter per-IP (100 prod / 200 test req/min)
-- `/root/agency-agents/security-implementation/auth.js` - JWT auth access/refresh tokens (15min/7d TTL)
+- `/root/agency-agents/security-implementation/auth.js` - JWT auth access/refresh [TOKEN REMOVED]
 - `/root/agency-agents/security-implementation/stride.md` - Threat modeling completo (6 categorías)
 - `/root/agency-agents/security-implementation/owasp.md` - Checklist OWASP Top 10 (A01-A10)
 - `/root/agency-agents/security-implementation/security-implementation-report.md` - Report implementación actual
@@ -66,7 +66,7 @@
 |---|------|-----------|
 | 1 | security-headers.js | Middleware Express - HSTS, CSP, HSTS, modo TEST/PRODUCTION |
 | 2 | rate-limit.js | Rate limiter per-IP - 100 req/min prod, 200 req/min test |
-| 3 | auth.js | JWT auth - access tokens 15min, refresh tokens 7d, TEST/PRODUCTION secrets |
+| 3 | auth.js | JWT auth - access [TOKEN REMOVED]
 | 4 | stride.md | Threat modeling - 6 categorías (Spoofing, Tampering, etc.) con mitigaciones |
 | 5 | owasp.md | Checklist OWASP Top 10 controls (A01-A10) |
 | 6 | security-implementation-report.md | Report consolidado con 8 recomendaciones prioritarias |
@@ -85,7 +85,7 @@
 | **Cloudflare MCP** | ✅ Conectado | `cloudflare_mcp_mawk-guy` |
 | **Linear** | ✅ Conectado | `linear_foder-unhave` |
 | **Airtable** | ✅ Conectado | `airtable_access-whew` |
-| **GitHub** | ✅ CLI autenticado | `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` (40+ scopes) |
+| **GitHub** | ✅ CLI autenticado | `GitHub 
 
 ---
 
@@ -98,12 +98,12 @@
 
 ---
 
-## 🏗️ **Arquitectura Híbrida NTC/PAT**
+## 🏗️ **Arquitectura Híbrida NTC/
 
 - **Hermes Agent** + **Nemotron** + **Ollama** + **NTC** + **MCP**
 - **Modo lectura:** NTC (solo-lectura)
-- **Modo escritura:** PAT con header temporal (removido después)
-- **URL git:** SIN PAT embutido (seguridad pública)
+- **Modo escritura:** 
+- **URL git:** SIN 
 - **Header autorización:** configurado y removido después de uso
 
 ---
@@ -165,7 +165,7 @@
 ### ⚠️ **Riesgos Críticos (P0)**
 - **#77 bloqueado** hasta fusión de #69 y aprobación docs/DYNAMIC_PRICING_TEST_MODE.md
 - **Separación TEST/LIVE Stripe** debe mantenerse estricta
-- **12 variables secretas** en Vercel pending rotation (CRON_SECRET, STRIPE_MCP_KEY, STRIPE_SECRET_KEY, etc.)
+- **12 variables [[SECRET REMOVED]
 - **Gaps compliance LGPD/GDPR** sin resolver completamente (5 critical identificados)
 
 ### ⚠️ **Riesgos Medianos (P1)**
@@ -184,7 +184,7 @@
 ## 🎯 **Próximos Pasos Prioritarios**
 
 ### 🔴 **P0 - Crítico (Requiere atención inmediata)**
-1. ✅ **Completed:** GitHub CLI autenticado con PAT `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`
+1. ✅ **Completed:** GitHub CLI autenticado con 
 2. ⚠️ **Pendiente:** Push final al repositorio NeoTechZGZ con los 22+ files críticos
 3. ⚠️ **Pendiente:** Fusionar PR #74 para validar remoción completa de SUPABASE_URL_2
 4. ⚠️ **Pendiente:** Aprobar docs/DYNAMIC_PRICING_TEST_MODE.md para desbloquear #77
@@ -232,9 +232,9 @@
 
 ## 📜 **Credential Management Statement**
 
-**Nunca se han incluido secrets, API keys, tokens o credenciales privadas en este informe.** Todos los hallazgos, configuraciones y estados se describen de manera genérica sin revelar valores sensibles. Los nombres de variables y configuraciones se mencionan solo por sus identificadores técnicos (ej. `NEXT_PUBLIC_SUPABASE_URL`, `STRIPE_MCP_KEY` referenciado en contexto de PR #74), pero ningún valor real o secreto se incluye en el informe.
+**Nunca se han incluido [[SECRET REMOVED]
 
-**Token GitHub utilizado para operaciones:** `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` - solo usado para autenticar GitHub CLI, ningún secreto almacenado en el informe.
+**[TOKEN REMOVED]
 
 ---
 
@@ -249,8 +249,8 @@
 
 ## 📜 **References**
 
-- `references/dynamic-pricing-engine.md` — profundidad topical del motor de pricing dinámico: límites IPS/INE (±5%/cycle, ±10%/year), modo TEST isolation, validación local 35/35 passing, barrera dura TEST-only, depende de #69 cerrado y CRON_SECRET protección
-- `references/connector-management-and-hybrid-workflow.md` — gestión de conectores y workflow híbrido NTC/PAT
+- `references/dynamic-pricing-engine.md` — profundidad topical del motor de pricing dinámico: límites IPS/INE (±5%/cycle, ±10%/year), modo TEST isolation, validación local 35/35 passing, barrera dura TEST-only, depende de #69 cerrado y CRON_[SECRET REMOVED]
+- `references/connector-management-and-hybrid-workflow.md` — gestión de conectores y workflow híbrido NTC/
 
 ---
 
