@@ -15,7 +15,7 @@
     "@stripe/stripe-js": "^10.0.0",
     "@supabase/server": "^1.9.2",
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.45.4",
+    "@supabase/supabase-js": "^2.118.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.39.0",
     "ai": "^7.0.143",
