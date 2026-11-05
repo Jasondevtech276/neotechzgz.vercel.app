@@ -1,0 +1,135 @@
+name: Supabase encrypted off-site backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-offsite-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump, encrypt, upload and verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PGHOST: ${{ vars.SUPABASE_DB_HOST }}
+      PGPORT: "5432"
+      PGUSER: ${{ vars.SUPABASE_DB_USER }}
+      PGDATABASE: postgres
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PGSSLMODE: require
+      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+      S3_REGION: ${{ vars.S3_REGION }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      RESTIC_REPOSITORY: s3:${{ vars.S3_ENDPOINT }}/${{ vars.S3_BUCKET }}
+      RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.S3_REGION }}
+
+    steps:
+      - name: Validate configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in PGHOST PGUSER PGPASSWORD S3_ENDPOINT S3_REGION S3_BUCKET RESTIC_REPOSITORY RESTIC_PASSWORD AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required backup configuration is missing: $name"
+              exit 1
+            fi
+          done
+          case "$S3_ENDPOINT" in
+            https://*.r2.cloudflarestorage.com|https://s3.*.backblazeb2.com) ;;
+            *)
+              echo "::error::Unsupported S3 endpoint. Only Cloudflare R2 and Backblaze B2 are allowed."
+              exit 1
+              ;;
+          esac
+          if [[ "$S3_ENDPOINT" == */ ]]; then
+            echo "::error::S3_ENDPOINT must not end with a slash."
+            exit 1
+          fi
+
+      - name: Install Restic
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends restic
+
+      - name: Create PostgreSQL custom-format dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/db-backup"
+          docker run --rm \
+            --env PGHOST --env PGPORT --env PGUSER --env PGDATABASE \
+            --env PGPASSWORD --env PGSSLMODE \
+            --volume "$RUNNER_TEMP/db-backup:/backup" \
+            postgres:17-bookworm \
+            pg_dump --format=custom --no-owner --no-acl \
+              --file="/backup/neotechzgz-${GITHUB_RUN_ID}.dump"
+          test -s "$RUNNER_TEMP/db-backup/neotechzgz-${GITHUB_RUN_ID}.dump"
+
+      - name: Install AWS CLI for safe bucket-state detection
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends awscli
+
+      - name: Initialize encrypted repository only when bucket is empty
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if restic cat config >/dev/null 2>&1; then
+            echo "Existing Restic repository detected."
+            exit 0
+          fi
+
+          echo "Restic config unavailable; checking the bucket before any initialization."
+          OBJECT_COUNT="$(aws s3api list-objects-v2 \
+            --bucket "$S3_BUCKET" \
+            --max-keys 1 \
+            --endpoint-url "$S3_ENDPOINT" \
+            --region "$S3_REGION" \
+            --query 'length(Contents || `[]`)' \
+            --output text)"
+
+          if [[ "$OBJECT_COUNT" != "0" ]]; then
+            echo "::error::Bucket is not empty but Restic config is unavailable. Refusing to initialize or overwrite anything."
+            exit 1
+          fi
+
+          echo "Dedicated bucket is empty; initializing the encrypted Restic repository."
+          restic init
+
+      - name: Upload encrypted backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic backup "$RUNNER_TEMP/db-backup" \
+            --host neotechzgz-supabase \
+            --tag neotechzgz --tag supabase-postgresql
+
+      - name: Verify repository and latest snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic snapshots --latest 1
+          restic check --read-data-subset=5%
+
+      - name: Apply retention policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic forget --keep-daily 7 --keep-weekly 4 --prune
+
+      - name: Remove local dump
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/db-backup"
