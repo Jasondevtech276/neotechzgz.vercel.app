@@ -9,8 +9,8 @@ export type StripeMode = 'test' | 'live'
  * the application's payment credential.
  */
 export function getStripeMode(): StripeMode {
-  const secret = process.env.STRIPE_SECRET_KEY ?? ''
-  const match = /^(?:sk|rk)_(test|live)_/.exec(secret)
+  const secret = process.env.STRIPE_SECRET_KEY
+  const match = /^(?:sk|rk)_(test|live)_/.exec(secret ?? '')
   if (!match) throw new Error('A valid dedicated STRIPE_SECRET_KEY is required')
 
   const mode = match[1] as StripeMode
