@@ -29,3 +29,7 @@ export function getStripe() {
   const secret = process.env.STRIPE_SECRET_KEY!
   return new Stripe(secret, { maxNetworkRetries: 2, timeout: 15_000 })
 }
+
+export function isStripeConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY)
+}

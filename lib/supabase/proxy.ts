@@ -1,12 +1,18 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getSupabasePublicConfig } from './env'
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || process.env.SUPABASE_URL_2
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY_2
-  if (!url || !key) return response
-  const supabase = createServerClient(url, key, {
+  const config = getSupabasePublicConfig()
+  if (!config) {
+    // Fail closed for admin routes when Supabase is not configured.
+    if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+    return response
+  }
+  const supabase = createServerClient(config.url, config.publishableKey, {
     cookies: {
       getAll() { return request.cookies.getAll() },
       setAll(cookiesToSet) {

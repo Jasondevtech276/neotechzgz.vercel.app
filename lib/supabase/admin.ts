@@ -1,6 +1,9 @@
 import 'server-only'
 import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdminConfig } from './server-env'
 
 export function createAdminClient() {
-  return createClient(process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', process.env.SUPABASE_SECRET_KEY ?? process.env.SERVICE_ROLE ?? '', { auth: { autoRefreshToken: false, persistSession: false } })
+  const config = getSupabaseAdminConfig()
+  if (!config) throw new Error('Supabase server configuration is missing')
+  return createClient(config.url, config.secretKey, { auth: { autoRefreshToken: false, persistSession: false } })
 }
