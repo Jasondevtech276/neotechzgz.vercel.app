@@ -56,3 +56,40 @@
 - PPC Campaign Strategist, Paid Social Strategist, Ad Creative Strategist, Tracking & Measurement Specialist.
 
 Los perfiles upstream contienen recomendaciones genéricas que pueden no encajar con el modelo de Neotechzgz. Este playbook y `AGENTS.md` prevalecen.
+
+
+## 8. Orquestación de agentes y tareas automatizadas
+
+### Delegación automática dentro de Codex
+El agente principal debe delegar trabajo independiente y acotado cuando aporte paralelismo real; no lanzar todos los agentes para cada petición.
+- Cambios de aplicación: Frontend/Backend según el área + Code Reviewer + Test Automation Engineer.
+- Supabase/PostgreSQL: Database Optimizer + Backend Architect + Security Architect, inicialmente en lectura. Las escrituras requieren aprobación, backup y rollback.
+- CI/CD y Vercel: DevOps Automator + SRE + Security Architect. Nunca promover a Production sin aprobación.
+- Seguridad/credenciales: Application Security Engineer + Secrets & Credential Hygiene Engineer. No mostrar valores secretos ni rotar/revocar credenciales sin aprobación.
+- SEO y contenido: SEO Specialist + Content Creator + Growth Hacker; producir análisis y borradores.
+- Redes y campañas: Social Media Strategist + PPC Campaign Strategist + Paid Social Strategist + Ad Creative Strategist. Solo estrategia y borradores.
+- Medición: Tracking & Measurement Specialist + Privacy Engineer. Diseñar taxonomía y plan de consentimiento; no desplegar tags/píxeles.
+- Conversión: E-commerce & Conversion Architect + Growth Hacker + SEO Specialist. Optimizar journeys de servicios/suscripciones.
+
+### Autonomía permitida sin aprobación adicional
+- Lectura de repositorios, issues, PRs, documentación y estado de despliegues.
+- Diagnóstico, análisis de riesgos, priorización y recomendaciones.
+- Ejecutar tests, lint, typecheck y build local sin efectos externos.
+- Preparar borradores, planes, briefs, informes y cambios locales reversibles.
+- Crear una rama de trabajo local y preparar un diff cuando la tarea solicitada incluya implementación.
+
+### Requiere aprobación explícita por acción
+- Merge de PR, push a ramas protegidas, release o despliegue de Production.
+- Escrituras en Supabase, migraciones, cambios de RLS/grants, restauraciones o cambios de estado.
+- Cambios de variables/secretos, DNS, configuración de producción, permisos o integraciones.
+- Stripe LIVE, activar pagos, Checkout, precios, cobros, reembolsos o facturación.
+- Cambios en HubSpot, envíos de correo, contacto a leads, publicación de contenido/anuncios, carga de audiencias o gasto publicitario.
+
+### Cadencia de revisión recomendada
+- Semanal: salud del repositorio, PRs, CI, despliegues Preview, dependencias y riesgos abiertos.
+- Semanal: oportunidades de SEO, contenido y conversión basadas en datos disponibles; entregar borradores, no publicar.
+- Mensual: revisión de arquitectura, seguridad, continuidad, backups/restauración, permisos y deuda técnica.
+- Cada ejecución debe informar evidencias, fecha, limitaciones de acceso, prioridades y acciones que necesitan aprobación. Si una integración no está accesible, informar el bloqueo; nunca inventar resultados.
+
+### Límites de la automatización
+Los agentes de Codex son subagentes invocados por el agente principal; los archivos TOML no constituyen por sí mismos un scheduler. La configuración del proyecto habilita delegación multiagente. Las tareas recurrentes se programan por separado y se mantienen en modo de auditoría/solo lectura salvo autorización.
