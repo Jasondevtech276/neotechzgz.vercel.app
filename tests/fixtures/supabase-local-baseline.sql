@@ -131,3 +131,13 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- Legacy RLS auto-enable helper referenced by the first hardening migration.
+CREATE OR REPLACE FUNCTION public.rls_auto_enable()
+RETURNS event_trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN;
+END;
+$$;
