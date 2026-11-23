@@ -117,3 +117,17 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- Existing Auth trigger function referenced by the earliest hardening migration.
+-- The canonical implementation and trigger are installed by the later account
+-- reconciliation migration. This stub only makes the migration order explicit.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN NEW;
+END;
+$$;
