@@ -42,7 +42,7 @@ jobs:
       - name: Verify CLI and initialize local-only project
         run: |
           supabase --version
-          supabase init --yes
+          supabase init
 
       - name: Start disposable local Supabase stack
         run: supabase start
