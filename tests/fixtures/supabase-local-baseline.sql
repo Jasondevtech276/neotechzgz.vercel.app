@@ -1,5 +1,17 @@
--- Test-only baseline for the pre-existing tables that are not represented
--- by initial migrations in this repository. Runs only in a disposable local stack.
+-- CI-ONLY canonical schema fixture.
+-- The workflow copies this file into a temporary Supabase project as the
+-- earliest migration. It is never placed in supabase/migrations in the repo
+-- and must never be pushed to a hosted Supabase project.
+
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  display_name text NOT NULL DEFAULT '',
+  is_admin boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  deleted_at timestamptz
+);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
 CREATE TABLE public.quotes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email varchar NOT NULL,
@@ -9,15 +21,41 @@ CREATE TABLE public.quotes (
   hours integer,
   description text,
   budget_generated numeric,
+  budget_calculated numeric(12,2),
   created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-  status varchar DEFAULT 'pending'
+  updated_at timestamptz DEFAULT now(),
+  status varchar DEFAULT 'pending',
+  client_code text NOT NULL DEFAULT ('NTZ-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12))),
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
+CREATE UNIQUE INDEX quotes_client_code_uidx ON public.quotes(client_code);
 ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE public.quote_status_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id uuid NOT NULL REFERENCES public.quotes(id) ON DELETE CASCADE,
+  status text NOT NULL,
+  note text,
+  changed_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.quote_status_history ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE public.support_tickets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  subject varchar(160) NOT NULL,
+  message text NOT NULL,
+  status text NOT NULL DEFAULT 'open',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.support_tickets ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE public.payments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
-  stripe_session_id text NOT NULL UNIQUE,
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  stripe_session_id text UNIQUE,
   stripe_customer_id text,
   stripe_subscription_id text,
   product_id text NOT NULL,
@@ -29,7 +67,13 @@ CREATE TABLE public.payments (
   current_period_end timestamptz,
   updated_at timestamptz NOT NULL DEFAULT now(),
   latest_invoice_created_at bigint,
-  latest_invoice_id text
+  latest_invoice_id text,
+  subscription_status text CHECK (
+    subscription_status IS NULL OR subscription_status IN (
+      'active','trialing','past_due','canceled','incomplete',
+      'incomplete_expired','unpaid','paused'
+    )
+  )
 );
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
@@ -63,3 +107,13 @@ CREATE TABLE public.stripe_invoices (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.stripe_invoices ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
