@@ -52,9 +52,9 @@ jobs:
         run: |
           set -euo pipefail
           status="$(supabase status -o env)"
-          api_url="$(printf '%s\n' "$status" | sed -n 's/^API_URL=//p' | tail -n1)"
-          anon_key="$(printf '%s\n' "$status" | sed -n 's/^ANON_KEY=//p' | tail -n1)"
-          service_key="$(printf '%s\n' "$status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | tail -n1)"
+          api_url="$(printf '%s\n' "$status" | sed -n 's/^API_URL=//p' | tail -n1 | sed 's/^\"//; s/\"$//')"
+          anon_key="$(printf '%s\n' "$status" | sed -n 's/^ANON_KEY=//p' | tail -n1 | sed 's/^\"//; s/\"$//')"
+          service_key="$(printf '%s\n' "$status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | tail -n1 | sed 's/^\"//; s/\"$//')"
           test -n "$api_url"
           test -n "$anon_key"
           test -n "$service_key"
