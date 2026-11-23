@@ -20,7 +20,7 @@ jobs:
   auth-and-rls:
     name: Ephemeral Supabase Auth and RLS integration
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout isolated audit branch
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -34,27 +34,39 @@ jobs:
       - name: Install application dependencies
         run: npm ci
 
-      - name: Install Supabase CLI v3.2.0
+      - name: Install Supabase CLI v3.3.0
         uses: supabase/setup-cli@v3
         with:
-          version: 3.2.0
+          version: 3.3.0
 
-      - name: Verify CLI and initialize local-only project
+      - name: Create isolated local Supabase project
+        shell: bash
         run: |
+          set -euo pipefail
           supabase --version
           supabase init
+          local_dir="$RUNNER_TEMP/neotechzgz-supabase-local"
+          mkdir -p "$local_dir/supabase/migrations"
+          cp supabase/config.toml "$local_dir/supabase/config.toml"
+          cp supabase/migrations/*.sql "$local_dir/supabase/migrations/"
+          # The CI-only baseline is injected into a disposable copy, before all
+          # application migrations. It is never added to the production migration tree.
+          cp tests/fixtures/supabase-local-baseline.sql             "$local_dir/supabase/migrations/20261005000000_ci_schema_baseline.sql"
+          echo "SUPABASE_LOCAL_DIR=$local_dir" >> "$GITHUB_ENV"
 
-      - name: Start disposable local Supabase stack
+      - name: Start disposable Supabase stack and apply migrations
+        working-directory: ${{ runner.temp }}/neotechzgz-supabase-local
         run: supabase start
 
       - name: Export only local Supabase credentials to this runner
         shell: bash
+        working-directory: ${{ runner.temp }}/neotechzgz-supabase-local
         run: |
           set -euo pipefail
           status="$(supabase status -o env)"
-          api_url="$(printf '%s\n' "$status" | sed -n 's/^API_URL=//p' | tail -n1 | sed 's/^\"//; s/\"$//')"
-          anon_key="$(printf '%s\n' "$status" | sed -n 's/^ANON_KEY=//p' | tail -n1 | sed 's/^\"//; s/\"$//')"
-          service_key="$(printf '%s\n' "$status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | tail -n1 | sed 's/^\"//; s/\"$//')"
+          api_url="$(printf '%s\n' "$status" | sed -n 's/^API_URL=//p' | tail -n1 | sed 's/^"//; s/"$//')"
+          anon_key="$(printf '%s\n' "$status" | sed -n 's/^ANON_KEY=//p' | tail -n1 | sed 's/^"//; s/"$//')"
+          service_key="$(printf '%s\n' "$status" | sed -n 's/^SERVICE_ROLE_KEY=//p' | tail -n1 | sed 's/^"//; s/"$//')"
           test -n "$api_url"
           test -n "$anon_key"
           test -n "$service_key"
@@ -65,17 +77,10 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=$service_key"
           } >> "$GITHUB_ENV"
 
-      - name: Apply isolated schema baseline and selected migrations
-        run: |
-          set -euo pipefail
-          supabase db query -f tests/fixtures/supabase-local-baseline.sql
-          supabase db query -f supabase/migrations/20261025170000_stripe_webhook_test_events.sql
-          supabase db query -f supabase/migrations/20261030005446_preview_reconcile_account_schema.sql
-          supabase db query -f supabase/migrations/20261030005545_preview_consolidate_read_policies.sql
-
       - name: Run real Auth, session and cross-account RLS tests
         run: node tests/supabase-auth-rls.integration.mjs
 
       - name: Stop local stack and remove all ephemeral containers and volumes
         if: always()
+        working-directory: ${{ runner.temp }}/neotechzgz-supabase-local
         run: supabase stop --no-backup || true
