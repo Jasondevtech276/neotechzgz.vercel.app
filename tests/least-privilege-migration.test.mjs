@@ -41,7 +41,7 @@ const supportTicketMigration = readFileSync(
 )
 
 test('support ticket inserts cannot override server-managed lifecycle fields', () => {
-  assert.match(supportTicketMigration, /REVOKE INSERT ON TABLE public\\.support_tickets FROM authenticated;/)
-  assert.match(supportTicketMigration, /GRANT INSERT \\(user_id, subject, message\\)\\s+ON TABLE public\\.support_tickets TO authenticated;/)
-  assert.doesNotMatch(supportTicketMigration, /GRANT INSERT ON TABLE public\\.support_tickets TO authenticated;/)
+  assert.match(supportTicketMigration, /REVOKE INSERT ON TABLE public\.support_tickets FROM authenticated;/)
+  assert.match(supportTicketMigration, /GRANT INSERT \(user_id, subject, message\)\s+ON TABLE public\.support_tickets TO authenticated;/)
+  assert.doesNotMatch(supportTicketMigration, /GRANT INSERT ON TABLE public\.support_tickets TO authenticated;/)
 })
