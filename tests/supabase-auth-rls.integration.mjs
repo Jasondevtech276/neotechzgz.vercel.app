@@ -203,6 +203,30 @@ try {
   );
   assert.deepEqual(ids(customerTickets), [ticketA.id]);
 
+  // Customers can create their own ticket, while server-managed lifecycle
+  // fields remain protected by column-level INSERT privileges.
+  const customerCreatedTicket = checkNoError(
+    await customer.client.from("support_tickets").insert({
+      user_id: customer.id,
+      subject: "Customer-created CI ticket",
+      message: "A valid customer support request.",
+    }).select("id,status").single(),
+    "Customer own support ticket insert",
+  );
+  ticketIds.push(customerCreatedTicket.id);
+  assert.equal(customerCreatedTicket.status, "open",
+    "A customer-controlled ticket did not receive the server default status");
+
+  await expectError(
+    customer.client.from("support_tickets").insert({
+      user_id: customer.id,
+      subject: "Attempted status override",
+      message: "A customer must not set ticket lifecycle state.",
+      status: "closed",
+    }),
+    "Customer override of server-managed support ticket status",
+  );
+
   // Cross-account reads and writes must not disclose or modify the other account.
   const crossProfileUpdate = checkNoError(
     await customer.client.from("profiles")
