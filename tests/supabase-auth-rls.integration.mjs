@@ -289,7 +289,7 @@ try {
     await administrator.client.from("support_tickets").select("id,user_id"),
     "Administrator support ticket visibility",
   );
-  assert.deepEqual(ids(adminTickets), [ticketA.id, ticketB.id].sort());
+  assert.deepEqual(ids(adminTickets), [ticketA.id, ticketB.id, customerCreatedTicket.id].sort());
 
   const updatedQuote = checkNoError(
     await administrator.client.from("quotes")
