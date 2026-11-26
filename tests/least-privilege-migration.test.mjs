@@ -28,9 +28,9 @@ test('RLS policies match account and administrator read paths', () => {
 test('critical dependency fixes remain pinned in manifest and lockfile', async () => {
   const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   const lock = JSON.parse(readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'))
-  assert.equal(manifest.dependencies.next, '16.4.3')
+  assert.equal(manifest.dependencies.next, '16.4.6')
   assert.equal(manifest.overrides?.dompurify, '3.4.17')
   assert.equal(manifest.scripts.test, 'node --test')
-  assert.equal(lock.packages['node_modules/next']?.version, '16.4.3')
+  assert.equal(lock.packages['node_modules/next']?.version, '16.4.6')
   assert.equal(lock.packages['node_modules/dompurify']?.version, '3.4.17')
 })
