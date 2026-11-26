@@ -48,15 +48,27 @@ jobs:
           local_dir="$RUNNER_TEMP/neotechzgz-supabase-local"
           mkdir -p "$local_dir/supabase/migrations"
           cp supabase/config.toml "$local_dir/supabase/config.toml"
+          # La línea base exclusiva de CI se aplica a una copia desechable.
           cp supabase/migrations/*.sql "$local_dir/supabase/migrations/"
-          # The CI-only baseline is injected into a disposable copy, before all
-          # application migrations. It is never added to the production migration tree.
-          cp tests/fixtures/supabase-local-baseline.sql             "$local_dir/supabase/migrations/20261005000000_ci_schema_baseline.sql"
+          cp tests/fixtures/supabase-local-baseline.sql "$local_dir/supabase/migrations/20261005000000_ci_schema_baseline.sql"
           echo "SUPABASE_LOCAL_DIR=$local_dir" >> "$GITHUB_ENV"
 
-      - name: Start disposable Supabase stack and apply migrations
+      - name: Start disposable Supabase stack without logging credentials
+        shell: bash
         working-directory: ${{ runner.temp }}/neotechzgz-supabase-local
-        run: supabase start
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/supabase-start.log"
+          if supabase start >"$log" 2>&1; then
+            echo "Disposable local Supabase stack started; CLI credentials suppressed."
+          else
+            sed -E \
+              -e 's/(│[[:space:]]*(Publishable|Secret|Access Key|Secret Key)[[:space:]]*│[[:space:]]*)[^│]+/\1[REDACTED]/g' \
+              -e 's/(sb_(publishable|secret)_[A-Za-z0-9_-]+)/[REDACTED]/g' \
+              -e 's/(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/[REDACTED]/g' \
+              "$log" | tail -n 40 >&2
+            exit 1
+          fi
 
       - name: Export only local Supabase credentials to this runner
         shell: bash
@@ -82,5 +94,8 @@ jobs:
 
       - name: Stop local stack and remove all ephemeral containers and volumes
         if: always()
+        shell: bash
         working-directory: ${{ runner.temp }}/neotechzgz-supabase-local
-        run: supabase stop --no-backup || true
+        run: |
+          supabase stop --no-backup || true
+          rm -f "$RUNNER_TEMP/supabase-start.log"
