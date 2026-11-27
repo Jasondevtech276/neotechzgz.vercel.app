@@ -1,0 +1,166 @@
+name: Supabase EU R2 encrypted off-site backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_backup:
+        description: "Type BACKUP_TO_EU_R2 only after provisioning the EU-jurisdiction R2 bucket and Actions secrets"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-eu-r2-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: ${{ inputs.confirm_backup == 'BACKUP_TO_EU_R2' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      PGHOST: ${{ vars.SUPABASE_DB_HOST }}
+      PGPORT: "5432"
+      PGUSER: ${{ vars.SUPABASE_DB_USER }}
+      PGDATABASE: postgres
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PGSSLMODE: require
+      PGCONNECT_TIMEOUT: "10"
+      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+      S3_REGION: ${{ vars.S3_REGION }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      RESTIC_REPOSITORY: s3:${{ vars.S3_ENDPOINT }}/${{ vars.S3_BUCKET }}
+      RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.S3_REGION }}
+
+    steps:
+      - name: Validate protected configuration and EU jurisdiction endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in PGHOST PGUSER PGPASSWORD S3_ENDPOINT S3_REGION S3_BUCKET RESTIC_REPOSITORY RESTIC_PASSWORD AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Required backup configuration is missing: $name"
+              exit 1
+            fi
+          done
+
+          [[ "$PGHOST" == *.pooler.supabase.com ]] || {
+            echo "::error::PGHOST must be the Supabase Session Pooler hostname."
+            exit 1
+          }
+          [[ "$PGUSER" == *"qkzmpxyefuqdhyxwfjcw"* ]] || {
+            echo "::error::PGUSER must identify the canonical NeoTech ZGZ project."
+            exit 1
+          }
+          [[ "$S3_ENDPOINT" =~ ^https://[a-z0-9-]+\.eu\.r2\.cloudflarestorage\.com$ ]] || {
+            echo "::error::S3_ENDPOINT must use the EU-jurisdiction R2 endpoint."
+            exit 1
+          }
+          [[ "$S3_BUCKET" == "neotechzgz-db-backups-eu" ]] || {
+            echo "::error::S3_BUCKET must be the dedicated EU bucket neotechzgz-db-backups-eu."
+            exit 1
+          }
+          [[ "$S3_REGION" == "auto" ]] || {
+            echo "::error::S3_REGION must be auto for Cloudflare R2."
+            exit 1
+          }
+
+      - name: Install Restic and AWS CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends restic awscli
+          restic version
+          aws --version
+
+      - name: Verify source PostgreSQL major version
+        shell: bash
+        run: |
+          set -euo pipefail
+          server_version="$(docker run --rm \
+            --env PGHOST --env PGPORT --env PGUSER --env PGPASSWORD --env PGDATABASE --env PGSSLMODE --env PGCONNECT_TIMEOUT \
+            postgres:17-bookworm psql -XAtqc 'SHOW server_version_num')"
+          major="$((server_version / 10000))"
+          echo "Source PostgreSQL major: $major"
+          [[ "$major" -eq 17 ]] || {
+            echo "::error::Expected PostgreSQL 17; refusing to create a dump with a mismatched client."
+            exit 1
+          }
+
+      - name: Create PostgreSQL 17 custom-format dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/db-backup"
+          docker run --rm \
+            --env PGHOST --env PGPORT --env PGUSER --env PGPASSWORD --env PGDATABASE --env PGSSLMODE --env PGCONNECT_TIMEOUT --env GITHUB_RUN_ID \
+            --volume "$RUNNER_TEMP/db-backup:/backup" \
+            postgres:17-bookworm bash -lc '
+              umask 077
+              pg_dump --format=custom --no-owner --no-acl --verbose \
+                --file="/backup/neotechzgz-${GITHUB_RUN_ID}.dump"
+              chmod 600 "/backup/neotechzgz-${GITHUB_RUN_ID}.dump"
+            '
+          test -s "$RUNNER_TEMP/db-backup/neotechzgz-$GITHUB_RUN_ID.dump"
+          chmod 600 "$RUNNER_TEMP/db-backup/neotechzgz-$GITHUB_RUN_ID.dump"
+
+      - name: Initialize encrypted Restic repository only when the EU bucket is empty
+        shell: bash
+        run: |
+          set -euo pipefail
+          if restic cat config >/dev/null 2>&1; then
+            echo "Existing encrypted Restic repository detected."
+            exit 0
+          fi
+
+          echo "Restic config unavailable; checking the dedicated EU bucket before initialization."
+          object_count="$(aws s3api list-objects-v2 \
+            --bucket "$S3_BUCKET" \
+            --max-keys 1 \
+            --endpoint-url "$S3_ENDPOINT" \
+            --region "$S3_REGION" \
+            --query 'length(Contents || `[]`)' \
+            --output text)"
+
+          if [[ "$object_count" != "0" ]]; then
+            echo "::error::EU bucket is not empty but Restic config is unavailable. Refusing to initialize or overwrite anything."
+            exit 1
+          fi
+
+          restic init
+
+      - name: Upload encrypted backup and tag the canonical project
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic backup "$RUNNER_TEMP/db-backup" \
+            --host neotechzgz-supabase \
+            --tag neotechzgz \
+            --tag supabase-postgresql \
+            --tag project-qkzmpxyefuqdhyxwfjcw \
+            --tag eu-jurisdiction
+
+      - name: Verify snapshot and encrypted repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic snapshots --latest 1 --tag project-qkzmpxyefuqdhyxwfjcw
+          restic check --read-data-subset=5%
+
+      - name: Apply retention policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          restic forget --keep-daily 7 --keep-weekly 4 --prune
+
+      - name: Remove local plaintext dump
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/db-backup"
