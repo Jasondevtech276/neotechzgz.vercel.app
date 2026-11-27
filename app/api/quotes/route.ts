@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     const requestUrl = new URL(request.url)
     let notification: 'sent' | 'failed' = 'failed'
     try {
-      await sendEmail({ to_email: email, to_name: name, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.`, tracking_url: `${requestUrl.origin}/#seguimiento` })
+      await sendEmail({ to_email: email, to_name: name, reply_to: 'larbimhed260796@gmail.com', sender_name: 'NeoTech ZGZ', subject: `Solicitud recibida ${data.client_code} — NeoTech ZGZ`, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.`, tracking_url: `${requestUrl.origin}/#seguimiento` })
       notification = 'sent'
     } catch (emailError) {
       console.error('[v0] quote confirmation email failed', emailError)
