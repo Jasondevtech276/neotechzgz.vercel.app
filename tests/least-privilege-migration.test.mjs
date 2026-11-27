@@ -52,9 +52,10 @@ const consolidatedReadPoliciesMigration = readFileSync(
 )
 
 test('owner/admin SELECT policies are consolidated without changing access predicates', () => {
-  assert.match(consolidatedReadPoliciesMigration, /CREATE POLICY quotes_select_own_or_admin ON public\\.quotes/)
-  assert.match(consolidatedReadPoliciesMigration, /CREATE POLICY payments_select_own_or_admin ON public\\.payments/)
-  assert.match(consolidatedReadPoliciesMigration, /CREATE POLICY support_tickets_select_own_or_admin ON public\\.support_tickets/)
-  assert.match(consolidatedReadPoliciesMigration, /auth\\.uid\\(\\)[\\s\\S]*user_id/)
-  assert.match(consolidatedReadPoliciesMigration, /p\\.is_admin = true/)
+  assert.ok(consolidatedReadPoliciesMigration.includes('CREATE POLICY quotes_select_own_or_admin ON public.quotes'))
+  assert.ok(consolidatedReadPoliciesMigration.includes('CREATE POLICY payments_select_own_or_admin ON public.payments'))
+  assert.ok(consolidatedReadPoliciesMigration.includes('CREATE POLICY support_tickets_select_own_or_admin ON public.support_tickets'))
+  assert.ok(consolidatedReadPoliciesMigration.includes('auth.uid()'))
+  assert.ok(consolidatedReadPoliciesMigration.includes('user_id'))
+  assert.ok(consolidatedReadPoliciesMigration.includes('p.is_admin = true'))
 })
