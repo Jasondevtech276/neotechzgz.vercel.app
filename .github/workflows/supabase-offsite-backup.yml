@@ -1,6 +1,9 @@
 name: Supabase EU R2 encrypted off-site backup
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/supabase-offsite-backup.yml"
   workflow_dispatch:
     inputs:
       confirm_backup:
@@ -17,7 +20,7 @@ concurrency:
 
 jobs:
   backup:
-    if: ${{ inputs.confirm_backup == 'BACKUP_TO_EU_R2' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_backup == 'BACKUP_TO_EU_R2' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
