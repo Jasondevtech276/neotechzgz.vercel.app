@@ -143,7 +143,8 @@ export async function GET(request: Request) {
           .update({
             user_id: null,
             name: 'Cliente eliminado',
-            email: `deleted+${account.id}@example.invalid`,
+            // Do not retain the user UUID in an anonymized field; use a reserved non-deliverable address.
+            email: 'deleted@example.invalid',
             company: null,
             description: null,
           })
