@@ -45,3 +45,16 @@ test('support ticket inserts cannot override server-managed lifecycle fields', (
   assert.match(supportTicketMigration, /GRANT INSERT \(user_id, subject, message\)\s+ON TABLE public\.support_tickets TO authenticated;/)
   assert.doesNotMatch(supportTicketMigration, /GRANT INSERT ON TABLE public\.support_tickets TO authenticated;/)
 })
+
+const consolidatedReadPoliciesMigration = readFileSync(
+  new URL('../supabase/migrations/20261127140000_consolidate_rls_read_policies.sql', import.meta.url),
+  'utf8',
+)
+
+test('owner/admin SELECT policies are consolidated without changing access predicates', () => {
+  assert.match(consolidatedReadPoliciesMigration, /CREATE POLICY quotes_select_own_or_admin ON public\\.quotes/)
+  assert.match(consolidatedReadPoliciesMigration, /CREATE POLICY payments_select_own_or_admin ON public\\.payments/)
+  assert.match(consolidatedReadPoliciesMigration, /CREATE POLICY support_tickets_select_own_or_admin ON public\\.support_tickets/)
+  assert.match(consolidatedReadPoliciesMigration, /auth\\.uid\\(\\)[\\s\\S]*user_id/)
+  assert.match(consolidatedReadPoliciesMigration, /p\\.is_admin = true/)
+})
