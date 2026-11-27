@@ -36,7 +36,7 @@ test('critical dependency fixes remain pinned in manifest and lockfile', async (
 })
 
 const supportTicketMigration = readFileSync(
-  new URL('../supabase/migrations/20261124212306_secure_support_ticket_insert_columns.sql', import.meta.url),
+  new URL('../supabase/migrations/20261127142545_secure_support_ticket_insert_columns.sql', import.meta.url),
   'utf8',
 )
 
@@ -47,7 +47,7 @@ test('support ticket inserts cannot override server-managed lifecycle fields', (
 })
 
 const consolidatedReadPoliciesMigration = readFileSync(
-  new URL('../supabase/migrations/20261127140000_consolidate_rls_read_policies.sql', import.meta.url),
+  new URL('../supabase/migrations/20261127142557_consolidate_read_policies_final.sql', import.meta.url),
   'utf8',
 )
 
