@@ -34,3 +34,14 @@ test('critical dependency fixes remain pinned in manifest and lockfile', async (
   assert.equal(lock.packages['node_modules/next']?.version, '16.4.6')
   assert.equal(lock.packages['node_modules/dompurify']?.version, '3.4.17')
 })
+
+const supportTicketMigration = readFileSync(
+  new URL('../supabase/migrations/20261124212306_secure_support_ticket_insert_columns.sql', import.meta.url),
+  'utf8',
+)
+
+test('support ticket inserts cannot override server-managed lifecycle fields', () => {
+  assert.match(supportTicketMigration, /REVOKE INSERT ON TABLE public\.support_tickets FROM authenticated;/)
+  assert.match(supportTicketMigration, /GRANT INSERT \(user_id, subject, message\)\s+ON TABLE public\.support_tickets TO authenticated;/)
+  assert.doesNotMatch(supportTicketMigration, /GRANT INSERT ON TABLE public\.support_tickets TO authenticated;/)
+})
