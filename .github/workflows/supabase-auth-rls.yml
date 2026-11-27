@@ -5,7 +5,6 @@ on:
   pull_request:
     paths:
       - "supabase/migrations/**"
-      - "supabase/preview-migrations/**"
       - "tests/supabase-auth-rls.integration.mjs"
       - "tests/fixtures/supabase-local-baseline.sql"
       - ".github/workflows/supabase-auth-rls.yml"
@@ -51,8 +50,6 @@ jobs:
           cp supabase/config.toml "$local_dir/supabase/config.toml"
           # La línea base exclusiva de CI se aplica a una copia desechable.
           cp supabase/migrations/*.sql "$local_dir/supabase/migrations/"
-          # Las migraciones exclusivas de Preview solo se ejecutan en esta base efímera de CI.
-          cp supabase/preview-migrations/*.sql "$local_dir/supabase/migrations/"
           cp tests/fixtures/supabase-local-baseline.sql "$local_dir/supabase/migrations/20261005000000_ci_schema_baseline.sql"
           echo "SUPABASE_LOCAL_DIR=$local_dir" >> "$GITHUB_ENV"
 
