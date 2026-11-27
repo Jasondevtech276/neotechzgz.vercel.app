@@ -26,3 +26,15 @@ La historia de migraciones aplicada en producción no coincide completamente con
 ## Criterio de cierre
 
 Una migración no se considera resuelta por compilar o pasar CI. Debe existir evidencia de aplicación en Preview, verificación de permisos y una restauración/rollback practicable cuando afecte datos.
+
+
+## Versiones registradas tras la aplicación individual del 27-11-2026
+
+| Entorno | Versión | Migración |
+|---|---:|---|
+| Preview aislado | 20261127135710 | secure_support_ticket_insert_columns |
+| Preview aislado | 20261127140508 | consolidate_read_policies_final |
+| Producción | 20261127142545 | secure_support_ticket_insert_columns |
+| Producción | 20261127142557 | consolidate_read_policies_final |
+
+Los ficheros se mantienen en sus carpetas por entorno con los prefijos realmente registrados. No reutilizar el prefijo de un entorno en otro. La historia anterior a estas migraciones sigue pendiente de reconciliación; no habilitar `db push` global.
