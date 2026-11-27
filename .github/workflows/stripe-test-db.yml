@@ -4,9 +4,9 @@ on:
   pull_request:
     paths:
       - "supabase/functions/stripe-webhook-test/**"
-      - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
-      - "supabase/migrations/20261030005446_preview_reconcile_account_schema.sql"
-      - "supabase/migrations/20261030005545_preview_consolidate_read_policies.sql"
+      - "supabase/preview-migrations/20261025170000_stripe_webhook_test_events.sql"
+      - "supabase/preview-migrations/20261030005446_preview_reconcile_account_schema.sql"
+      - "supabase/preview-migrations/20261030005545_preview_consolidate_read_policies.sql"
       - ".github/workflows/stripe-test-db.yml"
       - "tsconfig.json"
   push:
@@ -14,9 +14,9 @@ on:
       - "audit/stripe-webhook-test-harness"
     paths:
       - "supabase/functions/stripe-webhook-test/**"
-      - "supabase/migrations/20261025170000_stripe_webhook_test_events.sql"
-      - "supabase/migrations/20261030005446_preview_reconcile_account_schema.sql"
-      - "supabase/migrations/20261030005545_preview_consolidate_read_policies.sql"
+      - "supabase/preview-migrations/20261025170000_stripe_webhook_test_events.sql"
+      - "supabase/preview-migrations/20261030005446_preview_reconcile_account_schema.sql"
+      - "supabase/preview-migrations/20261030005545_preview_consolidate_read_policies.sql"
       - ".github/workflows/stripe-test-db.yml"
       - "tsconfig.json"
   workflow_dispatch:
@@ -103,7 +103,7 @@ jobs:
           SQL
 
       - name: Apply isolated test migration
-        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261025170000_stripe_webhook_test_events.sql
+        run: psql -v ON_ERROR_STOP=1 -f supabase/preview-migrations/20261025170000_stripe_webhook_test_events.sql
 
       - name: Assert RLS, least privilege and primary key
         run: |
@@ -349,9 +349,9 @@ jobs:
 
       - name: Apply Preview schema migrations
         run: |
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261025170000_stripe_webhook_test_events.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261030005446_preview_reconcile_account_schema.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261030005545_preview_consolidate_read_policies.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/preview-migrations/20261025170000_stripe_webhook_test_events.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/preview-migrations/20261030005446_preview_reconcile_account_schema.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/preview-migrations/20261030005545_preview_consolidate_read_policies.sql
 
       - name: Assert ownership, admin, trigger and least-privilege behavior
         run: |
