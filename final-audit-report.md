@@ -85,7 +85,7 @@
 | **Cloudflare MCP** | ✅ Conectado | `cloudflare_mcp_mawk-guy` |
 | **Linear** | ✅ Conectado | `linear_foder-unhave` |
 | **Airtable** | ✅ Conectado | `airtable_access-whew` |
-| **GitHub** | ✅ CLI autenticado | `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` (40+ scopes) |
+| **GitHub** | ✅ CLI autenticado | `[REDACTED_GITHUB_PAT]` (40+ scopes) |
 
 ---
 
@@ -184,7 +184,7 @@
 ## 🎯 **Próximos Pasos Prioritarios**
 
 ### 🔴 **P0 - Crítico (Requiere atención inmediata)**
-1. ✅ **Completed:** GitHub CLI autenticado con PAT `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`
+1. ✅ **Completed:** GitHub CLI autenticado con PAT `[REDACTED_GITHUB_PAT]`
 2. ⚠️ **Pendiente:** Push final al repositorio NeoTechZGZ con los 22+ files críticos
 3. ⚠️ **Pendiente:** Fusionar PR #74 para validar remoción completa de SUPABASE_URL_2
 4. ⚠️ **Pendiente:** Aprobar docs/DYNAMIC_PRICING_TEST_MODE.md para desbloquear #77
@@ -234,7 +234,7 @@
 
 **Nunca se han incluido secrets, API keys, tokens o credenciales privadas en este informe.** Todos los hallazgos, configuraciones y estados se describen de manera genérica sin revelar valores sensibles. Los nombres de variables y configuraciones se mencionan solo por sus identificadores técnicos (ej. `NEXT_PUBLIC_SUPABASE_URL`, `STRIPE_MCP_KEY` referenciado en contexto de PR #74), pero ningún valor real o secreto se incluye en el informe.
 
-**Token GitHub utilizado para operaciones:** `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` - solo usado para autenticar GitHub CLI, ningún secreto almacenado en el informe.
+**Token GitHub utilizado para operaciones:** `[REDACTED_GITHUB_PAT]` - solo usado para autenticar GitHub CLI, ningún secreto almacenado en el informe.
 
 ---
 
