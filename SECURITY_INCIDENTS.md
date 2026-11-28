@@ -1,5 +1,8 @@
 # NeoTech ZGZ — registro de incidencias
 
+> **Actualización 31-oct-2026:** el estado vigente y priorizado está en [`SECURITY_ROADMAP.md`](SECURITY_ROADMAP.md). NT-01 queda **cerrado**: el alias `neotechzgz.vercel.app` sirve el deployment `dpl_6n4ksect4PUbnLFi3x4hTAcwzARK`, creado por el commit `294862e` de `main`. Nuevas: SEC-21 (token Supabase en el nombre de una variable de Vercel) y STRIPE-04 (precios inexistentes en la cuenta live). NT-03/NT-15 tienen corrección parcial en el PR #74.
+
+
 Última revisión: 19 de octubre de 2026. Se contrastaron `main`, los PR abiertos recientes, el registro de sesiones de trabajo y el dominio público. Este registro distingue evidencia comprobada, cambios preparados y tareas que requieren acceso o validación operativa. «Corregido» significa que existe una modificación comprobable; no equivale a producción validada.
 
 ## Inventario
