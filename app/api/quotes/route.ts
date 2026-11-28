@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      console.error('[v0] quote insert failed', error)
+      console.error('[quotes] quote insert failed', { errorCode: error.code })
       return NextResponse.json({ error: 'No se pudo guardar la solicitud' }, { status: 500 })
     }
 
@@ -115,12 +115,12 @@ export async function POST(request: Request) {
       await sendEmail({ to_email: email, to_name: name, reply_to: 'larbimhed260796@gmail.com', sender_name: 'NeoTech ZGZ', subject: `Solicitud recibida ${data.client_code} — NeoTech ZGZ`, client_code: data.client_code, status: data.status, service, message: `Hemos recibido tu solicitud ${data.client_code}. Te avisaremos cuando cambie su estado.`, tracking_url: `${requestUrl.origin}/#seguimiento` })
       notification = 'sent'
     } catch (emailError) {
-      console.error('[v0] quote confirmation email failed', emailError)
+      console.error('[quotes] quote confirmation email failed', { errorName: emailError instanceof Error ? emailError.name : 'UnknownError' })
     }
 
     return NextResponse.json({ clientCode: data.client_code, status: data.status, notification, budget }, { status: 201 })
   } catch (error) {
-    console.error('[v0] quote route failed', error)
+    console.error('[quotes] route failed', { errorName: error instanceof Error ? error.name : 'UnknownError' })
     return NextResponse.json({ error: 'Solicitud no válida' }, { status: 400 })
   }
 }
