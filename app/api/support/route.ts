@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   if (user.email) try {
     await sendEmail({ to_email: user.email, to_name: user.user_metadata?.name ?? user.email, reply_to: 'larbimhed260796@gmail.com', sender_name: 'NeoTech ZGZ', subject: `Ticket de soporte recibido ${data.id}`, client_code: data.id, status: data.status, service: 'Soporte', message: `Hemos recibido tu consulta: ${data.subject}. Te responderemos lo antes posible.`, tracking_url: `${new URL(request.url).origin}/account` })
   } catch (emailError) {
-    console.error('[v0] support confirmation email failed', emailError)
+    console.error('[support] confirmation email failed', { errorName: emailError instanceof Error ? emailError.name : 'UnknownError' })
   }
   return NextResponse.json({ ticket: data, notification: 'queued' }, { status: 201 })
 }
