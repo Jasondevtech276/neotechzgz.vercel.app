@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     await sendEmail({ to_email: 'larbimhed260796@gmail.com', to_name: 'NeoTech ZGZ', reply_to: email, sender_name: name, message, subject: 'Nuevo contacto NeoTech ZGZ' })
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('[v0] contact route failed', error)
+    console.error('[contact] route failed', { errorName: error instanceof Error ? error.name : 'UnknownError' })
     return NextResponse.json({ error: 'No se pudo enviar el mensaje' }, { status: 500 })
   }
 }

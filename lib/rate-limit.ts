@@ -15,7 +15,7 @@ export async function checkRateLimit(key: string) {
     return { success: true, remaining: 10, reset: 0 }
   }
   try { return await limiter.limit(key) } catch (error) {
-    console.error('[v0] rate limit unavailable', error)
+    console.error('[rate-limit] Redis limiter failed', { errorName: error instanceof Error ? error.name : 'UnknownError' })
     if (process.env.NODE_ENV === 'production') return { success: false, remaining: 0, reset: Date.now() + 60_000 }
     return { success: true, remaining: 10, reset: 0 }
   }
