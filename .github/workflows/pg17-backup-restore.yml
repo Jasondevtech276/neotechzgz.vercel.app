@@ -1,0 +1,120 @@
+name: PostgreSQL 17 encrypted backup and isolated restore verification
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/pg17-backup-restore.yml"
+  workflow_dispatch:
+    inputs:
+      confirm_restore_target:
+        description: "Type RESTORE_TO_ISOLATED_PG17 only after configuring a disposable, isolated PostgreSQL 17 target"
+        required: true
+        type: string
+      upload_encrypted_backup:
+        description: "Retain the encrypted backup as a short-lived GitHub Actions artifact"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pg17-backup-restore-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  backup-and-restore:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.confirm_restore_target == 'RESTORE_TO_ISOLATED_PG17' }}
+    runs-on: ubuntu-latest
+    container:
+      image: postgres:17-bookworm
+    timeout-minutes: 45
+    env:
+      PGCONNECT_TIMEOUT: "10"
+      PGSSLMODE: require
+      SOURCE_DATABASE_URL: ${{ secrets.SUPABASE_SOURCE_DB_URL }}
+      RESTORE_DATABASE_URL: ${{ secrets.PG17_ISOLATED_RESTORE_DB_URL }}
+      AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+      AGE_IDENTITY: ${{ secrets.BACKUP_AGE_IDENTITY }}
+    steps:
+      - name: Install age encryption utility
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends age ca-certificates
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Validate protected configuration and PostgreSQL 17 target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SOURCE_DATABASE_URL" || { echo "::error::Missing secret SUPABASE_SOURCE_DB_URL"; exit 1; }
+          test -n "$RESTORE_DATABASE_URL" || { echo "::error::Missing secret PG17_ISOLATED_RESTORE_DB_URL"; exit 1; }
+          test -n "$AGE_RECIPIENT" || { echo "::error::Missing repository variable BACKUP_AGE_RECIPIENT"; exit 1; }
+          test -n "$AGE_IDENTITY" || { echo "::error::Missing secret BACKUP_AGE_IDENTITY"; exit 1; }
+          source_version="$(psql "$SOURCE_DATABASE_URL" -XAtqc 'SHOW server_version_num')"
+          target_version="$(psql "$RESTORE_DATABASE_URL" -XAtqc 'SHOW server_version_num')"
+          echo "Source PostgreSQL major: $((source_version / 10000))"
+          echo "Restore target PostgreSQL major: $((target_version / 10000))"
+          if (( source_version < 170000 || source_version >= 180000 )); then
+            echo "::error::Source must be PostgreSQL 17 for this runbook."
+            exit 1
+          fi
+          if (( target_version < 170000 || target_version >= 180000 )); then
+            echo "::error::Restore target must be PostgreSQL 17."
+            exit 1
+          fi
+          source_server="$(psql "$SOURCE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local')")"
+          target_server="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT COALESCE(inet_server_addr()::text, 'local')")"
+          if [[ "$source_server" == "$target_server" ]]; then
+            echo "::error::Source and restore target resolve to the same server address. Use a separately isolated PostgreSQL 17 instance."
+            exit 1
+          fi
+          target_objects="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','p','v','m','S','f'))"
+          if [[ "$target_objects" != "0" ]]; then
+            echo "::error::Restore target is not empty ($target_objects user objects found). Use a new disposable database."
+            exit 1
+          fi
+          echo "Source and target identities differ; target contains no user tables/views/sequences."
+
+      - name: Create custom-format dump and encrypt it before retention
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          pg_dump --format=custom --no-owner --no-acl --verbose "$SOURCE_DATABASE_URL" --file=/tmp/neotech-pg17.dump
+          pg_restore --list /tmp/neotech-pg17.dump >/tmp/restore-toc.txt
+          test -s /tmp/restore-toc.txt
+          age --encrypt --recipient "$AGE_RECIPIENT" --output /tmp/neotech-pg17.dump.age /tmp/neotech-pg17.dump
+          sha256sum /tmp/neotech-pg17.dump.age | awk '{print $1}' > /tmp/neotech-pg17.dump.age.sha256
+          rm -f /tmp/neotech-pg17.dump /tmp/restore-toc.txt
+          echo "Encrypted dump created. Plaintext dump removed from the workspace."
+
+      - name: Decrypt into ephemeral runner storage and restore to isolated PG17
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$AGE_IDENTITY" > /tmp/backup-identity.txt
+          age --decrypt --identity /tmp/backup-identity.txt --output /tmp/neotech-pg17.restore.dump /tmp/neotech-pg17.dump.age
+          rm -f /tmp/backup-identity.txt
+          pg_restore --no-owner --no-acl --exit-on-error --verbose --dbname="$RESTORE_DATABASE_URL" /tmp/neotech-pg17.restore.dump
+          restored_version="$(psql "$RESTORE_DATABASE_URL" -XAtqc 'SHOW server_version_num')"
+          test "$((restored_version / 10000))" -eq 17
+          schema_count="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT count(*) FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname <> 'information_schema'")"
+          invalid_constraints="$(psql "$RESTORE_DATABASE_URL" -XAtqc "SELECT count(*) FROM pg_constraint WHERE NOT convalidated")"
+          echo "Restore completed; PostgreSQL major=$((restored_version / 10000)); non-system schemas=$schema_count; unvalidated constraints=$invalid_constraints"
+          test "$schema_count" -gt 0
+          test "$invalid_constraints" -eq 0
+          rm -f /tmp/neotech-pg17.restore.dump
+
+      - name: Upload encrypted backup only
+        if: ${{ inputs.upload_encrypted_backup }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: neotech-pg17-encrypted-backup-${{ github.run_id }}
+          path: |
+            /tmp/neotech-pg17.dump.age
+            /tmp/neotech-pg17.dump.age.sha256
+          if-no-files-found: error
+          retention-days: 3
