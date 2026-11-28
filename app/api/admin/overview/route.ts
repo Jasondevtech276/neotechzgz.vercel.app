@@ -19,7 +19,7 @@ export async function GET() {
   ])
 
   if (payments.error || tickets.error) {
-    console.error('[v0] admin overview query failed', { payments: payments.error, tickets: tickets.error })
+    console.error('[admin-overview] query failed', { paymentsErrorCode: payments.error?.code ?? null, ticketsErrorCode: tickets.error?.code ?? null })
     return NextResponse.json({ error: 'No se pudo cargar el resumen administrativo' }, { status: 500 })
   }
 
