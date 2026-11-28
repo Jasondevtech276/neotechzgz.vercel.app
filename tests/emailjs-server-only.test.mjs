@@ -11,3 +11,9 @@ test('EmailJS private key module is restricted to the server runtime', () => {
   assert.match(source, /^import ['"]server-only['"]/)
   assert.match(source, /process\.env\.EMAILJS_PRIVATE_KEY/)
 })
+
+test('EmailJS sends are blocked outside the production deployment', () => {
+  assert.match(source, /process\.env\.VERCEL_ENV !== 'production'/)
+  assert.match(source, /!privateKey/)
+  assert.match(source, /accessToken: privateKey/)
+})
