@@ -13,13 +13,13 @@ async function getAdminClient() {
 export async function GET() {
   const { supabase, isAdmin, profileError } = await getAdminClient()
   if (profileError) {
-    console.error('[v0] admin profile lookup failed', profileError)
+    console.error('[admin-quotes] profile lookup failed', { errorCode: profileError.code })
     return NextResponse.json({ error: 'No se pudo validar el rol administrativo' }, { status: 500 })
   }
   if (!isAdmin) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { data, error } = await supabase.from('quotes').select('id,client_code,name,email,company,service,hours,description,budget_calculated,status,created_at').order('created_at', { ascending: false })
   if (error) {
-    console.error('[v0] admin quotes query failed', error)
+    console.error('[admin-quotes] query failed', { errorCode: error.code })
     return NextResponse.json({ error: 'No se pudieron cargar las solicitudes' }, { status: 500 })
   }
   return NextResponse.json({ quotes: data })
@@ -44,7 +44,7 @@ export async function PATCH(request: Request) {
   try {
     await sendEmail({ to_email: quote.email, to_name: quote.name, client_code: quote.client_code, status, service: quote.service, message: `Tu solicitud ${quote.client_code} ha cambiado a: ${status}.`, tracking_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://neotechzgz.vercel.app'}/#seguimiento` })
   } catch (emailError) {
-    console.error('[v0] status notification email failed', emailError)
+    console.error('[admin-quotes] status email failed', { errorName: emailError instanceof Error ? emailError.name : 'UnknownError' })
   }
   return NextResponse.json({ ok: true, notification: 'queued' })
 }
