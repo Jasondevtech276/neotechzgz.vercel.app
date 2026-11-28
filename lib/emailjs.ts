@@ -1,3 +1,5 @@
+import 'server-only'
+
 type EmailParams = Record<string, string | number | undefined>
 
 // Variables compartidas por las plantillas de contacto y confirmación: to_email, to_name, reply_to, sender_name, subject, client_code, status, service, message, tracking_url.
